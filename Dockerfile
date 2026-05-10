@@ -13,7 +13,9 @@ RUN npm install
 
 # Copy source code
 COPY Untitled/backend/src ./src
-COPY Untitled/backend/data ./data
+
+# Create data directory (SQLite will use this)
+RUN mkdir -p /data
 
 # Build TypeScript
 RUN npm run build
@@ -22,4 +24,4 @@ RUN npm run build
 EXPOSE 3001
 
 # Start command
-CMD ["sh", "-c", "npm run db:init && npm start"]
+CMD ["sh", "-c", "mkdir -p /data && npm run db:init && npm start"]
