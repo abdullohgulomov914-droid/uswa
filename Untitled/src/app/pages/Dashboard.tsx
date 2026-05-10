@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from "motion/react";
-import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen, Settings, Bell } from "lucide-react";
+import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen, Bell, Settings } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { api } from '../../lib/api';
 
@@ -109,14 +109,12 @@ export function Dashboard() {
           >
             <MessageCircle size={18} />
           </button>
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/admin')}
-              className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0"
-            >
-              <Settings size={18} />
-            </button>
-          )}
+          <button
+            onClick={() => navigate('/settings')}
+            className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all shrink-0"
+          >
+            <Settings size={18} />
+          </button>
         </div>
       </motion.header>
 

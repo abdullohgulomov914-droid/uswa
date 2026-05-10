@@ -13,6 +13,7 @@ import { AdminPanel } from "./pages/AdminPanel";
 import { CommunityChat } from "./pages/CommunityChat";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { PollsPage } from "./pages/PollsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 // Auth guard component - checks on every render
 function AuthGuard() {
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
       { path: "community", Component: CommunityChat },
       { path: "notifications", Component: NotificationsPage },
       { path: "polls", Component: PollsPage },
+      { path: "settings", Component: SettingsPage },
     ],
   },
 ]);
