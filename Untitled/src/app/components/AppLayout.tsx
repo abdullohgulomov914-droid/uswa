@@ -3,7 +3,7 @@ import { Home, BookOpen, Activity, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
 // Sahifalar navbar ko'rsatilmasin
-const HIDE_NAV = ['/chat/', '/community', '/chats', '/notifications', '/polls', '/admin', '/streak', '/level', '/settings'];
+const HIDE_NAV = ['/chat/', '/community', '/chats', '/ai-chat', '/notifications', '/polls', '/admin', '/streak', '/level', '/settings'];
 
 export function AppLayout() {
   const location = useLocation();

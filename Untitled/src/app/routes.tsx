@@ -13,6 +13,7 @@ import { AdminPanel } from "./pages/AdminPanel";
 import { CommunityChat } from "./pages/CommunityChat";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { PollsPage } from "./pages/PollsPage";
+import { AiChat } from "./pages/AiChat";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ChatsListPage } from "./pages/ChatsListPage";
 
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
       { path: "polls", Component: PollsPage },
       { path: "settings", Component: SettingsPage },
       { path: "chats", Component: ChatsListPage },
+      { path: "ai-chat", Component: AiChat },
     ],
   },
 ]);

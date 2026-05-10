@@ -560,8 +560,16 @@ function FeedbackRequestsTab() {
     setRequests(prev => prev.filter(r => r.id !== id));
   };
 
-  const exportAnswers = (id: number) => {
-    window.open(`${(window as any).__API_URL__ || ''}/api/admin/feedback-requests/${id}/export`, '_blank');
+  const exportAnswers = async (id: number, question: string) => {
+    const res = await api.request<any>(`/admin/feedback-requests/${id}/export`);
+    if (!res.success) return;
+    const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `feedback_${id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (

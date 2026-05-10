@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Users, User, Lock, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, User, Lock, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { api } from '../../lib/api';
 
@@ -36,6 +36,16 @@ export function ChatsListPage() {
   const problemLabel = PROBLEM_LABELS[problem] || problem;
 
   const chats = [
+    {
+      id: 'ai',
+      icon: <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20"><Sparkles size={22} className="text-white" /></div>,
+      name: 'Uswaa AI',
+      desc: 'Shaxsiy tiklanish yordamchisi',
+      badge: 'Beta',
+      badgeColor: 'bg-emerald-500/20 text-emerald-400',
+      onClick: () => navigate('/ai-chat'),
+      locked: false,
+    },
     {
       id: 'general',
       icon: <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center"><Users size={22} className="text-blue-400" /></div>,
