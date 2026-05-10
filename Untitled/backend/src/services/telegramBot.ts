@@ -33,7 +33,7 @@ export function initTelegramBot() {
     }
 
     // Send greeting message
-    const greetingMessage = `🌟 *Identity Shift ga xush kelibsiz, ${firstName || 'Foydalanuvchi'}!*
+    const greetingMessage = `🌟 *USWA ga xush kelibsiz, ${firstName || 'Foydalanuvchi'}!*
 
 🛡️ *Sizning maxfiyligingiz biz uchun muhim*
 • Barcha ma'lumotlaringiz shifrlangan
@@ -93,7 +93,7 @@ export function initTelegramBot() {
       
       await ctx.reply(
         `🎉 Xush kelibsiz, ${displayName}!\n\n` +
-        `Identity Shift ilovasiga ro'yxatdan o'tdingiz.\n` +
+        `USWA ilovasiga ro'yxatdan o'tdingiz.\n` +
         `Sizga omad tilaymiz! 💪`,
         getMainKeyboard()
       );
@@ -122,7 +122,7 @@ export function initTelegramBot() {
     return ctx.reply(
       '📱 Ilovani ochish:',
       Markup.inlineKeyboard([
-        Markup.button.webApp('🚀 Identity Shift', WEB_APP_URL)
+        Markup.button.webApp('🚀 USWA', WEB_APP_URL)
       ])
     );
   });
@@ -340,9 +340,7 @@ export function initTelegramBot() {
 // Keyboard helper
 function getMainKeyboard() {
   return Markup.keyboard([
-    ['📊 Statistika', '✅ Tekshiruv'],
-    ['🆘 Yordam', '📱 Ilova'],
-    ['💭 Fikr va Mulohaza']
+    [' Fikr va Mulohaza']
   ]).resize();
 }
 
