@@ -46,11 +46,12 @@ export function initTelegramBot() {
 3. PIN kod yarating
 4. Sog'lom hayot sari qadam qo'ying!`;
 
+    const webAppUrl = process.env.TELEGRAM_WEB_APP_URL || WEB_APP_URL;
     await ctx.reply(greetingMessage, {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [[
-          { text: "🚀 USWA'ni ochish", web_app: { url: process.env.TELEGRAM_WEB_APP_URL || 'https://uswa-delta.vercel.app' } }
+          { text: "🚀 USWA'ni ochish", web_app: { url: webAppUrl } }
         ]]
       }
     });
@@ -95,7 +96,7 @@ export function initTelegramBot() {
         `🎉 Xush kelibsiz, ${displayName}!\n\n` +
         `USWA ilovasiga ro'yxatdan o'tdingiz.\n` +
         `Sizga omad tilaymiz! 💪`,
-        getMainKeyboard()
+        getFeedbackKeyboard()
       );
     } else {
       // Check if banned
@@ -107,7 +108,7 @@ export function initTelegramBot() {
         `Qaytganingizdan xursandmiz, ${user.display_name}! 👋\n\n` +
         `Zanjiringiz: ${user.streak_days} kun\n` +
         `Daraja: ${user.level} | XP: ${user.xp}`,
-        getMainKeyboard()
+        getFeedbackKeyboard()
       );
     }
 
@@ -288,42 +289,20 @@ export function initTelegramBot() {
     }
 
     // Handle menu buttons
-    switch (text) {
-      case '📊 Statistika':
-        return ctx.reply('/stats');
-      case '✅ Tekshiruv':
-        return ctx.reply('/checkin');
-      case '🆘 Yordam':
-        return ctx.reply('/emergency');
-      case '📱 Ilova':
-        return ctx.reply('/app');
-      case '💭 Fikr va Mulohaza':
-        return ctx.reply('✍️ Iltimos, fikr va mulohazalaringizni yozing. Biz ularni o\'qib o\'rganamiz va tizimni yaxshilash uchun ishlatamiz. Barcha fikrlar anonim saqlanadi.');
-      default:
-        // Check if it's a feedback message (longer text)
-        if (text.length > 50) {
-          // Save feedback
-          const feedbackStmt = db.prepare(`
-            INSERT INTO user_feedback (telegram_id, feedback_text, feedback_type)
-            VALUES (?, ?, ?)
-          `);
-          feedbackStmt.run(telegramId, text, 'general');
-          
-          return ctx.reply('✅ Rahmat! Fikringiz anonim saqlandi. Tizimni yaxshilashda yordamingiz katta ahamiyatga ega.');
-        }
-        // Log journal entry as trigger
-        const journalStmt = db.prepare(`
-          INSERT INTO journal_entries (user_id, type, content, created_at)
-          VALUES (?, ?, ?, ?)
-        `);
-        journalStmt.run(user.id, 'trigger', text, new Date().toISOString());
-        
-        await ctx.reply(
-          `📝 Qayd etildi: "${text}"\n\n` +
-          `Bu trigger sizning jurnalingizga qo'shildi.\n` +
-          `STAR+ tizimida uni tahlil qilishingiz mumkin.`,
-          getMainKeyboard()
-        );
+    if (text === '💭 Fikr va Mulohaza') {
+      return ctx.reply('✍️ Iltimos, fikr va mulohazalaringizni yozing. Biz ularni o\'qib o\'rganamiz va tizimni yaxshilash uchun ishlatamiz. Barcha fikrlar anonim saqlanadi.');
+    }
+
+    // Save any other text as feedback
+    try {
+      const feedbackStmt = db.prepare(`
+        INSERT INTO user_feedback (telegram_id, feedback_text, feedback_type)
+        VALUES (?, ?, ?)
+      `);
+      feedbackStmt.run(telegramId, text, 'general');
+      return ctx.reply('✅ Rahmat! Fikringiz anonim saqlandi.', getFeedbackKeyboard());
+    } catch {
+      return ctx.reply('✅ Rahmat!', getFeedbackKeyboard());
     }
   });
 
@@ -338,9 +317,9 @@ export function initTelegramBot() {
 }
 
 // Keyboard helper
-function getMainKeyboard() {
+function getFeedbackKeyboard() {
   return Markup.keyboard([
-    [' Fikr va Mulohaza']
+    ['💭 Fikr va Mulohaza']
   ]).resize();
 }
 

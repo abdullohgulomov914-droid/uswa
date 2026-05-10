@@ -23,7 +23,7 @@ export class ApiClient {
     localStorage.removeItem('token');
   }
 
-  private async request<T>(
+  async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {

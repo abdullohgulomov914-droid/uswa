@@ -6,6 +6,7 @@ import { Journal } from "./pages/Journal";
 import { Science } from "./pages/Science";
 import { Relapse } from "./pages/Relapse";
 import { AuthPage } from "./pages/AuthPage";
+import { BuddyChat } from "./pages/BuddyChat";
 
 // Auth guard component - checks on every render
 function AuthGuard() {
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: "journal", Component: Journal },
       { path: "science", Component: Science },
       { path: "relapse", Component: Relapse },
+      { path: "chat/:buddyId", Component: BuddyChat },
     ],
   },
 ]);

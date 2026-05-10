@@ -9,6 +9,7 @@ import { communityRouter } from './routes/community.js';
 import { emergencyRouter } from './routes/emergency.js';
 import { adminRouter } from './routes/admin.js';
 import { telegramRouter } from './routes/telegram.js';
+import { chatRouter } from './routes/chat.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initTelegramBot } from './services/telegramBot.js';
 import { initDatabase } from './db/index.js';
@@ -35,6 +36,8 @@ app.use('/api/community', communityRouter);
 app.use('/api/emergency', emergencyRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/telegram', telegramRouter);
+
+app.use('/api/chat', chatRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

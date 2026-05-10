@@ -138,6 +138,20 @@ export function initDatabase() {
     )
   `);
 
+  // Buddy chat messages
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS buddy_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sender_id INTEGER NOT NULL,
+      receiver_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Telegram sessions for mini app
   db.exec(`
     CREATE TABLE IF NOT EXISTS telegram_sessions (

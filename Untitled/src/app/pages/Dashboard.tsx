@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from "motion/react";
-import { Flame, Brain, Shield, Award, ChevronRight, Loader2 } from "lucide-react";
-import { Link } from "react-router";
+import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 import { api } from '../../lib/api';
 
 interface UserStats {
@@ -10,12 +10,14 @@ interface UserStats {
   longestStreak: number;
   xp: number;
   level: number;
+  buddyId?: number;
 }
 
 export function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadUserData();
@@ -24,19 +26,20 @@ export function Dashboard() {
   const loadUserData = async () => {
     try {
       setLoading(true);
-      // Get user profile
       const userResponse = await api.getMe();
       if (userResponse.success && userResponse.data) {
         const userData = userResponse.data as any;
+        // Also fetch buddy
+        const buddyRes = await api.request<any>('/community/buddy');
         setStats({
           displayName: userData.displayName || 'Foydalanuvchi',
           streakDays: userData.streakDays || 0,
           longestStreak: userData.longestStreak || 0,
           xp: userData.xp || 0,
           level: userData.level || 1,
+          buddyId: buddyRes.success && buddyRes.data ? buddyRes.data.id : undefined,
         });
       } else {
-        // Try to get from localStorage fallback
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
           const userData = JSON.parse(savedUser);
@@ -162,9 +165,20 @@ export function Dashboard() {
         <p className="text-xs text-slate-400 leading-relaxed mb-4">
           Siz hozirda "Dopamin normallashuv" bosqichidasiz. Diqqatingiz va irodangiz har kungi o'tgan kun bilan kuchayib bormoqda.
         </p>
-        <Link to="/journal" className="flex items-center justify-center gap-1 w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-xl transition-colors">
-          Daraja haqida <ChevronRight size={16} />
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/journal" className="flex-1 flex items-center justify-center gap-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-xl transition-colors">
+            Daraja haqida <ChevronRight size={16} />
+          </Link>
+          {stats?.buddyId && (
+            <button
+              onClick={() => navigate(`/chat/${stats.buddyId}`)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-xl transition-colors border border-emerald-500/20"
+            >
+              <MessageCircle size={16} />
+              Chat
+            </button>
+          )}
+        </div>
       </motion.div>
       
     </div>

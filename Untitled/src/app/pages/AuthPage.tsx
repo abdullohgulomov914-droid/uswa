@@ -90,19 +90,26 @@ export function AuthPage() {
       if (window.Telegram?.WebApp) {
         const tg = window.Telegram.WebApp;
         tg.ready();
+
+        if (!tg.initData) {
+          setError('Telegram WebApp initData topilmadi. Ilovani Telegram orqali oching.');
+          setIsLoading(false);
+          return;
+        }
+
         const response = await api.request('/telegram/auth', {
           method: 'POST',
           body: JSON.stringify({ initData: tg.initData }),
         });
         if (response.success && response.data) {
-          login(response.data.user, response.data.token);
+          login((response.data as any).user, (response.data as any).token);
           setStep('onboarding');
         } else {
-          setError('Telegram orqali kirishda xatolik');
+          setError((response.error?.message) || 'Telegram orqali kirishda xatolik');
         }
       } else {
         window.open('https://t.me/uswaaabot', '_blank');
-        setError('Telegram bot orqali davom eting');
+        setError('Ilovani Telegram orqali oching: @uswaaabot');
       }
     } catch {
       setError("Xatolik yuz berdi. Qaytadan urinib ko'ring.");
