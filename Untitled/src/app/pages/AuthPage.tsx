@@ -136,6 +136,7 @@ export function AuthPage() {
         method: 'PATCH',
         body: JSON.stringify({ displayName: name, age: parseInt(age), problem }),
       });
+      sessionStorage.setItem('pin_verified', '1');
       window.location.href = '/';
     } catch {
       setError('Xatolik yuz berdi');
@@ -146,6 +147,7 @@ export function AuthPage() {
 
   const handlePinLogin = (currentPin: string) => {
     if (verifyPin(currentPin)) {
+      sessionStorage.setItem('pin_verified', '1');
       window.location.href = '/';
     } else {
       setError("Noto'g'ri PIN kod");

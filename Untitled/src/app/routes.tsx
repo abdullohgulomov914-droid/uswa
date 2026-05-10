@@ -10,13 +10,14 @@ import { BuddyChat } from "./pages/BuddyChat";
 
 // Auth guard component - checks on every render
 function AuthGuard() {
-  const token = localStorage.getItem('token');
   const pin = localStorage.getItem('pin');
-  
-  if (!token || !pin) {
+  const pinVerified = sessionStorage.getItem('pin_verified');
+
+  // Must have pin set AND verified in this session
+  if (!pin || !pinVerified) {
     return <Navigate to="/auth" replace />;
   }
-  
+
   return <AppLayout />;
 }
 
