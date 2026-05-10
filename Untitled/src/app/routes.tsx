@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { AppLayout } from "./components/AppLayout";
 import { Dashboard } from "./pages/Dashboard";
 import { Emergency } from "./pages/Emergency";
@@ -7,10 +7,17 @@ import { Science } from "./pages/Science";
 import { Relapse } from "./pages/Relapse";
 import { AuthPage } from "./pages/AuthPage";
 
-// Simple auth check
-const isAuthenticated = () => {
-  return !!localStorage.getItem('token') && !!localStorage.getItem('pin');
-};
+// Auth guard component - checks on every render
+function AuthGuard() {
+  const token = localStorage.getItem('token');
+  const pin = localStorage.getItem('pin');
+  
+  if (!token || !pin) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  return <AppLayout />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -19,7 +26,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: isAuthenticated() ? <AppLayout /> : <Navigate to="/auth" replace />,
+    element: <AuthGuard />,
     children: [
       { index: true, Component: Dashboard },
       { path: "emergency", Component: Emergency },

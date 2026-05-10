@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Eye, EyeOff, Lock, User, Calendar, MessageSquare, Send, ChevronRight, CheckCircle } from 'lucide-react';
+import { Shield, Eye, EyeOff, Lock, User, Calendar, AlertTriangle, Send, ChevronRight, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../../lib/api';
 
@@ -246,6 +246,16 @@ export function AuthPage() {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-5"
           >
+            {/* Privacy Notice at Top */}
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-amber-200 text-xs leading-relaxed">
+                  <strong className="text-amber-100">Sizning illatingiz maxfiy saqlanadi</strong> — hatto yaratuvchilar ham ko'ra olmaydi. Bu ma'lumot faqat sizning shaxsiy statistikangiz uchun ishlatiladi.
+                </p>
+              </div>
+            </div>
+
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold text-white">Siz haqingizda</h2>
               <p className="text-emerald-400 text-sm">
@@ -292,16 +302,25 @@ export function AuthPage() {
 
               <div className="space-y-2">
                 <label className="text-sm text-slate-400 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  Qanday muammoyiz bor?
+                  <AlertTriangle className="w-4 h-4" />
+                  Illatingiz nima?
                 </label>
-                <textarea
+                <select
                   value={problem}
                   onChange={(e) => setProblem(e.target.value)}
-                  placeholder="Qisqacha tavsiflang..."
-                  rows={3}
-                  className="w-full p-4 bg-slate-900/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none"
-                />
+                  className="w-full p-4 bg-slate-900/60 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer"
+                >
+                  <option value="" disabled className="bg-slate-900">Tanlang...</option>
+                  <option value="pornography" className="bg-slate-900">Pornografiya va masturbatsiya</option>
+                  <option value="drugs" className="bg-slate-900">Giyohvand moddalar</option>
+                  <option value="alcohol" className="bg-slate-900">Alkogol</option>
+                  <option value="smoking" className="bg-slate-900">Chekish</option>
+                  <option value="gambling" className="bg-slate-900">Qimor o'ynash</option>
+                  <option value="gaming" className="bg-slate-900">O'yinlar (gaming addiction)</option>
+                  <option value="social_media" className="bg-slate-900">Ijtimoiy tarmoqlar</option>
+                  <option value="overeating" className="bg-slate-900">Ortiqcha ovqatlanish</option>
+                  <option value="other" className="bg-slate-900">Boshqa</option>
+                </select>
               </div>
             </div>
 

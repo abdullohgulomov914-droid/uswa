@@ -388,4 +388,123 @@ router.post('/broadcast', authenticateAdmin, asyncHandler(async (req: AuthReques
   });
 }));
 
+// Export user data (admin can export any user, user can export themselves)
+router.get('/export/:userId?', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const targetUserId = req.params.userId ? parseInt(req.params.userId as string) : req.user!.id;
+  const isAdmin = req.user!.isAdmin;
+  
+  // Non-admin can only export their own data
+  if (!isAdmin && targetUserId !== req.user!.id) {
+    res.status(403).json({ success: false, error: { message: 'Access denied' } });
+    return;
+  }
+
+  // Get user data (exclude sensitive/problem field from admin view)
+  const user = db.prepare(`
+    SELECT id, telegram_id, telegram_username, username, email, display_name,
+           streak_days, longest_streak, last_relapse_date, xp, level,
+           is_admin, is_banned, created_at, updated_at
+    FROM users WHERE id = ?
+  `).get(targetUserId) as any;
+
+  if (!user) {
+    res.status(404).json({ success: false, error: { message: 'User not found' } });
+    return;
+  }
+
+  // Get journal entries
+  const journalEntries = db.prepare(`
+    SELECT id, type, title, content, trigger_time, trigger_location, trigger_feeling, created_at
+    FROM journal_entries WHERE user_id = ?
+    ORDER BY created_at DESC
+  `).all(targetUserId) as any[];
+
+  // Get relapses
+  const relapses = db.prepare(`
+    SELECT id, trigger, notes, mood, logged_at
+    FROM relapses WHERE user_id = ?
+    ORDER BY logged_at DESC
+  `).all(targetUserId) as any[];
+
+  // Get emergency sessions
+  const emergencySessions = db.prepare(`
+    SELECT id, technique, was_successful, duration_seconds, started_at, completed_at
+    FROM emergency_sessions WHERE user_id = ?
+    ORDER BY started_at DESC
+  `).all(targetUserId) as any[];
+
+  // Get check-ins
+  const checkIns = db.prepare(`
+    SELECT id, check_in_date, xp_earned, created_at
+    FROM check_ins WHERE user_id = ?
+    ORDER BY check_in_date DESC
+  `).all(targetUserId) as any[];
+
+  // Compile export data
+  const exportData = {
+    user: {
+      id: user.id,
+      telegramId: user.telegram_id,
+      telegramUsername: user.telegram_username,
+      username: user.username,
+      email: user.email,
+      displayName: user.display_name,
+      streakDays: user.streak_days,
+      longestStreak: user.longest_streak,
+      lastRelapseDate: user.last_relapse_date,
+      xp: user.xp,
+      level: user.level,
+      isAdmin: Boolean(user.is_admin),
+      isBanned: Boolean(user.is_banned),
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    },
+    journalEntries: journalEntries.map(e => ({
+      id: e.id,
+      type: e.type,
+      title: e.title,
+      content: e.content,
+      triggerTime: e.trigger_time,
+      triggerLocation: e.trigger_location,
+      triggerFeeling: e.trigger_feeling,
+      createdAt: e.created_at,
+    })),
+    relapses: relapses.map(r => ({
+      id: r.id,
+      trigger: r.trigger,
+      notes: r.notes,
+      mood: r.mood,
+      loggedAt: r.logged_at,
+    })),
+    emergencySessions: emergencySessions.map(s => ({
+      id: s.id,
+      technique: s.technique,
+      wasSuccessful: Boolean(s.was_successful),
+      durationSeconds: s.duration_seconds,
+      startedAt: s.started_at,
+      completedAt: s.completed_at,
+    })),
+    checkIns: checkIns.map(c => ({
+      id: c.id,
+      checkInDate: c.check_in_date,
+      xpEarned: c.xp_earned,
+      createdAt: c.created_at,
+    })),
+    exportMetadata: {
+      exportedAt: new Date().toISOString(),
+      exportedBy: req.user!.id,
+      isAdminExport: isAdmin && targetUserId !== req.user!.id,
+    },
+  };
+
+  // Set headers for JSON download
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="user_${targetUserId}_export_${new Date().toISOString().split('T')[0]}.json"`);
+  
+  res.json({
+    success: true,
+    data: exportData,
+  });
+}));
+
 export { router as adminRouter };
