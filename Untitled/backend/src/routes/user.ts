@@ -226,4 +226,24 @@ router.patch('/profile', authenticateToken, asyncHandler(async (req: AuthRequest
   res.json({ success: true, message: 'Profile updated' });
 }));
 
+// Submit feedback answer
+router.post('/feedback-answer', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const { requestId, answer } = z.object({ requestId: z.number(), answer: z.string().min(1) }).parse(req.body);
+  const request = db.prepare('SELECT id FROM feedback_requests WHERE id = ? AND is_active = 1').get(requestId);
+  if (!request) { res.status(404).json({ success: false }); return; }
+  // Prevent duplicate
+  const existing = db.prepare('SELECT id FROM feedback_answers WHERE request_id = ? AND user_id = ?').get(requestId, req.user!.id);
+  if (existing) { res.json({ success: true, message: 'Already answered' }); return; }
+  db.prepare('INSERT INTO feedback_answers (request_id, user_id, answer) VALUES (?, ?, ?)').run(requestId, req.user!.id, answer);
+  res.json({ success: true });
+}));
+
+// Get active feedback request for user
+router.get('/feedback-request/active', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const request = db.prepare('SELECT * FROM feedback_requests WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1').get() as any;
+  if (!request) { res.json({ success: true, data: null }); return; }
+  const answered = db.prepare('SELECT id FROM feedback_answers WHERE request_id = ? AND user_id = ?').get(request.id, req.user!.id);
+  res.json({ success: true, data: answered ? null : request });
+}));
+
 export { router as userRouter };

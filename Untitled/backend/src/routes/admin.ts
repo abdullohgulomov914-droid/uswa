@@ -665,4 +665,68 @@ router.post('/notify', authenticateAdmin, asyncHandler(async (req: AuthRequest, 
   res.json({ success: true });
 }));
 
+// Feedback requests (admin sends platform feedback)
+router.get('/feedback-requests', authenticateAdmin, asyncHandler(async (_req, res) => {
+  const requests = db.prepare('SELECT * FROM feedback_requests ORDER BY created_at DESC').all() as any[];
+  const result = requests.map(r => {
+    const answers = db.prepare(
+      'SELECT fa.answer, fa.created_at, u.display_name, u.telegram_username FROM feedback_answers fa JOIN users u ON fa.user_id = u.id WHERE fa.request_id = ?'
+    ).all(r.id) as any[];
+    return { ...r, answerCount: answers.length, answers };
+  });
+  res.json({ success: true, data: result });
+}));
+
+router.post('/feedback-requests', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const { question } = z.object({ question: z.string().min(1) }).parse(req.body);
+  const result = db.prepare('INSERT INTO feedback_requests (question) VALUES (?)').run(question);
+  const requestId = result.lastInsertRowid;
+
+  // Send to all users via notification
+  db.prepare('INSERT INTO notifications (user_id, title, body, type) VALUES (NULL, ?, ?, ?)').run(
+    'Platformadan so\'rovnoma', question, 'feedback_request'
+  );
+
+  // Also send via Telegram bot
+  const users = db.prepare('SELECT telegram_id FROM users WHERE telegram_id IS NOT NULL AND is_banned = 0').all() as any[];
+  const { bot } = await import('../services/telegramBot.js');
+  for (const u of users) {
+    try {
+      await bot.telegram.sendMessage(
+        u.telegram_id,
+        `💬 *Uswaa platformasidan so'rov:*\n\n${question}\n\n_Ilovani oching va fikringizni bildiring_`,
+        { parse_mode: 'Markdown' }
+      );
+    } catch { /* blocked */ }
+  }
+
+  logAdminAction(req.user!.id, 'FEEDBACK_REQUEST', undefined, question.substring(0, 100), req.ip);
+  res.status(201).json({ success: true, data: { id: requestId } });
+}));
+
+router.delete('/feedback-requests/:id', authenticateAdmin, asyncHandler(async (req, res) => {
+  db.prepare('DELETE FROM feedback_requests WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+}));
+
+// Export feedback answers as JSON
+router.get('/feedback-requests/:id/export', authenticateAdmin, asyncHandler(async (req, res) => {
+  const request = db.prepare('SELECT * FROM feedback_requests WHERE id = ?').get(req.params.id) as any;
+  if (!request) { res.status(404).json({ success: false }); return; }
+  const answers = db.prepare(
+    'SELECT fa.answer, fa.created_at, u.display_name, u.telegram_username FROM feedback_answers fa JOIN users u ON fa.user_id = u.id WHERE fa.request_id = ? ORDER BY fa.created_at DESC'
+  ).all(req.params.id) as any[];
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="feedback_${req.params.id}.json"`);
+  res.json({ question: request.question, answers, exportedAt: new Date().toISOString() });
+}));
+
+// Get user feedbacks (fikr va mulohazalar)
+router.get('/feedbacks', authenticateAdmin, asyncHandler(async (_req, res) => {
+  const feedbacks = db.prepare(
+    'SELECT uf.*, fr.reply_text FROM user_feedback uf LEFT JOIN feedback_replies fr ON uf.id = fr.feedback_id ORDER BY uf.created_at DESC LIMIT 100'
+  ).all() as any[];
+  res.json({ success: true, data: feedbacks });
+}));
+
 export { router as adminRouter };

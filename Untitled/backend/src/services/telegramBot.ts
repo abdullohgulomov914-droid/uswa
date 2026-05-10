@@ -279,10 +279,35 @@ export function initTelegramBot() {
   // Handle text messages
   bot.on('text', async (ctx) => {
     const text = ctx.message.text;
-    
-    // Check if user exists
     const telegramId = ctx.from?.id.toString();
     if (!telegramId) return;
+
+    // Admin reply to feedback (reply to forwarded message)
+    if (telegramId === ADMIN_ID && ctx.message.reply_to_message) {
+      const replyToText = (ctx.message.reply_to_message as any).text || '';
+      // Extract feedback_id from forwarded message caption
+      const match = replyToText.match(/#feedback_(\d+)/);
+      if (match) {
+        const feedbackId = parseInt(match[1]);
+        const feedback = db.prepare('SELECT * FROM user_feedback WHERE id = ?').get(feedbackId) as any;
+        if (feedback) {
+          // Save reply
+          db.prepare('INSERT INTO feedback_replies (feedback_id, reply_text) VALUES (?, ?)').run(feedbackId, text);
+          // Send reply to user via bot
+          try {
+            await bot.telegram.sendMessage(
+              feedback.telegram_id,
+              `💬 *Uswaa jamoasidan javob:*\n\n${text}`,
+              { parse_mode: 'Markdown' }
+            );
+            await ctx.reply('✅ Javob foydalanuvchiga yuborildi.');
+          } catch {
+            await ctx.reply('❌ Foydalanuvchiga yuborib bo\'lmadi (bot bloklangan bo\'lishi mumkin).');
+          }
+          return;
+        }
+      }
+    }
 
     const stmt = db.prepare('SELECT * FROM users WHERE telegram_id = ?');
     const user = stmt.get(telegramId) as any;
@@ -291,19 +316,31 @@ export function initTelegramBot() {
       return ctx.reply('Iltimos, avval /start buyrug\'ini yuboring.');
     }
 
-    // Handle menu buttons
     if (text === '💭 Fikr va Mulohaza') {
       return ctx.reply('✍️ Iltimos, fikr va mulohazalaringizni yozing. Biz ularni o\'qib o\'rganamiz va tizimni yaxshilash uchun ishlatamiz. Barcha fikrlar anonim saqlanadi.');
     }
 
-    // Save any other text as feedback
+    // Save feedback and forward to admin
     try {
-      const feedbackStmt = db.prepare(`
-        INSERT INTO user_feedback (telegram_id, feedback_text, feedback_type)
-        VALUES (?, ?, ?)
-      `);
-      feedbackStmt.run(telegramId, text, 'general');
-      return ctx.reply('✅ Rahmat! Fikringiz anonim saqlandi.', getFeedbackKeyboard());
+      const result = db.prepare(
+        'INSERT INTO user_feedback (telegram_id, feedback_text, feedback_type) VALUES (?, ?, ?)'
+      ).run(telegramId, text, 'general');
+      const feedbackId = result.lastInsertRowid;
+
+      // Forward to admin with feedback_id tag for reply tracking
+      if (ADMIN_ID) {
+        const adminMsg =
+          `📩 *Yangi fikr #feedback_${feedbackId}*\n` +
+          `👤 @${user.telegram_username || 'anonim'} (ID: ${telegramId})\n` +
+          `📅 ${new Date().toLocaleString('uz-UZ')}\n\n` +
+          `💬 ${text}\n\n` +
+          `_Reply qiling — javob foydalanuvchiga yuboriladi_`;
+        try {
+          await bot.telegram.sendMessage(ADMIN_ID, adminMsg, { parse_mode: 'Markdown' });
+        } catch { /* admin blocked */ }
+      }
+
+      return ctx.reply('✅ Rahmat! Fikringiz saqlandi.', getFeedbackKeyboard());
     } catch {
       return ctx.reply('✅ Rahmat!', getFeedbackKeyboard());
     }

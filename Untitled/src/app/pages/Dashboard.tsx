@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { motion } from "motion/react";
-import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen, Bell, Settings, LogOut } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen, Bell, Settings, X } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { api } from '../../lib/api';
 
@@ -19,6 +19,9 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [feedbackRequest, setFeedbackRequest] = useState<any>(null);
+  const [feedbackAnswer, setFeedbackAnswer] = useState('');
+  const [feedbackSent, setFeedbackSent] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => { loadUserData(); }, []);
@@ -38,6 +41,10 @@ export function Dashboard() {
         ]);
 
         if (unreadRes.success) setUnreadCount(unreadRes.data?.count || 0);
+
+        // Check active feedback request
+        const fbRes = await api.request<any>('/user/feedback-request/active');
+        if (fbRes.success && fbRes.data) setFeedbackRequest(fbRes.data);
 
         setStats({
           displayName: userData.displayName || 'Foydalanuvchi',
@@ -66,6 +73,16 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const submitFeedback = async () => {
+    if (!feedbackAnswer.trim() || !feedbackRequest) return;
+    await api.request('/user/feedback-answer', {
+      method: 'POST',
+      body: JSON.stringify({ requestId: feedbackRequest.id, answer: feedbackAnswer }),
+    });
+    setFeedbackSent(true);
+    setTimeout(() => { setFeedbackRequest(null); setFeedbackSent(false); setFeedbackAnswer(''); }, 1500);
   };
 
   if (loading) {
@@ -240,6 +257,36 @@ export function Dashboard() {
           <ChevronRight size={16} className="text-slate-600" />
         </button>
       </motion.div>
+
+      {/* Feedback request modal */}
+      <AnimatePresence>
+        {feedbackRequest && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center p-4">
+            <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+              className="w-full max-w-sm bg-slate-900 border border-emerald-500/30 rounded-3xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-white">💬 Platformadan so'rov</h2>
+                <button onClick={() => setFeedbackRequest(null)} className="text-slate-400 hover:text-white"><X size={20} /></button>
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed">{feedbackRequest.question}</p>
+              {feedbackSent ? (
+                <p className="text-center text-emerald-400 font-medium py-2">✅ Rahmat! Javobingiz qabul qilindi.</p>
+              ) : (
+                <>
+                  <textarea value={feedbackAnswer} onChange={e => setFeedbackAnswer(e.target.value)}
+                    placeholder="Fikringizni yozing..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-emerald-500 min-h-[80px] resize-none" />
+                  <button onClick={submitFeedback} disabled={!feedbackAnswer.trim()}
+                    className="w-full py-3 bg-emerald-500 disabled:bg-slate-700 text-white font-medium rounded-xl">
+                    Yuborish
+                  </button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

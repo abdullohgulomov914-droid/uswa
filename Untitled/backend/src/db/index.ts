@@ -138,6 +138,40 @@ export function initDatabase() {
     )
   `);
 
+  // Feedback replies (admin bot reply)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS feedback_replies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      feedback_id INTEGER NOT NULL,
+      reply_text TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (feedback_id) REFERENCES user_feedback(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Platform feedback requests (admin sends, users answer)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS feedback_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      question TEXT NOT NULL,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Platform feedback answers
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS feedback_answers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      answer TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (request_id) REFERENCES feedback_requests(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Notifications
   db.exec(`
     CREATE TABLE IF NOT EXISTS notifications (

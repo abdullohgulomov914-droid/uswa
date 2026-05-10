@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Users, FileText, BookOpen, BarChart2, Trash2, Plus, Edit2, Check, X, Loader2, ChevronRight, ArrowLeft, Send, Bell } from "lucide-react";
+import { Users, FileText, BookOpen, BarChart2, Trash2, Plus, Edit2, Check, X, Loader2, ChevronRight, ArrowLeft, Send, Bell, MessageSquare, Download } from "lucide-react";
 import { useNavigate } from "react-router";
 import { api } from "../../lib/api";
 
-type Tab = 'stats' | 'users' | 'articles' | 'glossary' | 'broadcast' | 'polls';
+type Tab = 'stats' | 'users' | 'articles' | 'glossary' | 'broadcast' | 'polls' | 'feedbacks' | 'feedback-requests';
 
 export function AdminPanel() {
   const [tab, setTab] = useState<Tab>('stats');
@@ -45,6 +45,8 @@ export function AdminPanel() {
           { id: 'glossary', label: "Lug'at", icon: <BookOpen size={16} /> },
           { id: 'broadcast', label: 'Xabar', icon: <Send size={16} /> },
           { id: 'polls', label: "So'rovnoma", icon: <BarChart2 size={16} /> },
+          { id: 'feedbacks', label: 'Fikrlar', icon: <MessageSquare size={16} /> },
+          { id: 'feedback-requests', label: 'Fikr so\'rash', icon: <MessageSquare size={16} /> },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${tab === t.id ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
@@ -60,6 +62,8 @@ export function AdminPanel() {
         {tab === 'glossary' && <GlossaryTab />}
         {tab === 'broadcast' && <BroadcastTab />}
         {tab === 'polls' && <PollsAdminTab />}
+        {tab === 'feedbacks' && <FeedbacksTab />}
+        {tab === 'feedback-requests' && <FeedbackRequestsTab />}
       </div>
     </div>
   );
@@ -487,6 +491,127 @@ function PollsAdminTab() {
               <button onClick={() => del(p.id)} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400"><Trash2 size={14} /></button>
             </div>
           </div>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+function FeedbacksTab() {
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.request<any[]>('/admin/feedbacks').then(res => {
+      if (res.success && res.data) setFeedbacks(res.data);
+      setLoading(false);
+    });
+  }, []);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 mt-2">
+      <p className="text-xs text-slate-500">Foydalanuvchilardan kelgan fikr va mulohazalar. Botda reply qiling — javob foydalanuvchiga yuboriladi.</p>
+      {loading ? <Spinner /> : feedbacks.length === 0 ? (
+        <p className="text-slate-500 text-sm text-center py-6">Hali fikr yo'q</p>
+      ) : feedbacks.map((f: any) => (
+        <div key={f.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-slate-500">#{f.id} · {new Date(f.created_at).toLocaleString('uz-UZ')}</span>
+            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">@{f.telegram_id}</span>
+          </div>
+          <p className="text-sm text-slate-200">{f.feedback_text}</p>
+          {f.reply_text && (
+            <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+              <p className="text-xs text-emerald-400">✅ Javob: {f.reply_text}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+function FeedbackRequestsTab() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [question, setQuestion] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    const res = await api.request<any[]>('/admin/feedback-requests');
+    if (res.success && res.data) setRequests(res.data);
+    setLoading(false);
+  };
+
+  const send = async () => {
+    if (!question.trim()) return;
+    setSending(true);
+    await api.request('/admin/feedback-requests', { method: 'POST', body: JSON.stringify({ question }) });
+    setQuestion(''); setShowForm(false);
+    await load();
+    setSending(false);
+  };
+
+  const del = async (id: number) => {
+    await api.request(`/admin/feedback-requests/${id}`, { method: 'DELETE' });
+    setRequests(prev => prev.filter(r => r.id !== id));
+  };
+
+  const exportAnswers = (id: number) => {
+    window.open(`${(window as any).__API_URL__ || ''}/api/admin/feedback-requests/${id}/export`, '_blank');
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 mt-2">
+      <button onClick={() => setShowForm(!showForm)}
+        className="w-full py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl flex items-center justify-center gap-2 text-sm font-medium">
+        <Plus size={16} />{showForm ? 'Bekor' : 'Yangi fikr so\'rash'}
+      </button>
+
+      {showForm && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <p className="text-xs text-slate-400">Savol barcha foydalanuvchilarga ilovada va Telegram orqali yuboriladi.</p>
+          <div className="space-y-1">
+            <label className="text-xs text-slate-500">Savol *</label>
+            <textarea value={question} onChange={e => setQuestion(e.target.value)}
+              placeholder="Platforma haqida fikringiz..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-emerald-500 min-h-[80px] resize-none" />
+          </div>
+          <button onClick={send} disabled={!question.trim() || sending}
+            className="w-full py-3 bg-emerald-500 disabled:bg-slate-700 text-white font-medium rounded-xl flex items-center justify-center gap-2">
+            {sending ? <Loader2 size={16} className="animate-spin" /> : <><Send size={16} />Yuborish</>}
+          </button>
+        </div>
+      )}
+
+      {loading ? <Spinner /> : requests.length === 0 ? (
+        <p className="text-slate-500 text-sm text-center py-6">Hali so'rov yo'q</p>
+      ) : requests.map(r => (
+        <div key={r.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <p className="text-sm font-medium text-white">{r.question}</p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400">{r.answerCount} ta javob</span>
+            <div className="flex gap-2">
+              <button onClick={() => exportAnswers(r.id)}
+                className="flex items-center gap-1 text-xs bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg">
+                <Download size={12} /> Export
+              </button>
+              <button onClick={() => del(r.id)} className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400">
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+          {r.answers?.length > 0 && (
+            <div className="space-y-2 border-t border-slate-800 pt-3">
+              {r.answers.slice(0, 3).map((a: any, i: number) => (
+                <p key={i} className="text-xs text-slate-400 bg-slate-800 rounded-xl p-2">{a.answer}</p>
+              ))}
+              {r.answers.length > 3 && <p className="text-xs text-slate-500">+{r.answers.length - 3} ta javob...</p>}
+            </div>
+          )}
         </div>
       ))}
     </motion.div>
