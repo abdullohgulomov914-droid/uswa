@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Sparkles, Users, User, Lock, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, User, Lock, ChevronRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { api } from '../../lib/api';
 
@@ -37,17 +37,6 @@ export function ChatsListPage() {
 
   const chats = [
     {
-      id: 'ai',
-      icon: <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20"><Sparkles size={22} className="text-white" /></div>,
-      name: 'Uswaa AI',
-      desc: 'Shaxsiy tiklanish yordamchisi',
-      badge: 'Tez orada',
-      badgeColor: 'bg-emerald-500/20 text-emerald-400',
-      onClick: () => navigate('/community'), // AI toast chiqadi
-      locked: false,
-      comingSoon: true,
-    },
-    {
       id: 'general',
       icon: <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center"><Users size={22} className="text-blue-400" /></div>,
       name: 'Uswaa davrasi',
@@ -56,7 +45,6 @@ export function ChatsListPage() {
       badgeColor: 'bg-blue-500/20 text-blue-400',
       onClick: () => navigate('/community'),
       locked: false,
-      comingSoon: false,
     },
     ...(problem ? [{
       id: 'problem',
@@ -67,7 +55,6 @@ export function ChatsListPage() {
       badgeColor: 'bg-purple-500/20 text-purple-400',
       onClick: () => navigate('/community'),
       locked: false,
-      comingSoon: false,
     }] : []),
     ...(buddyId ? [{
       id: 'buddy',
@@ -78,7 +65,6 @@ export function ChatsListPage() {
       badgeColor: 'bg-indigo-500/20 text-indigo-400',
       onClick: () => navigate(`/chat/${buddyId}`),
       locked: false,
-      comingSoon: false,
     }] : []),
     {
       id: 'psychologist',
@@ -89,7 +75,6 @@ export function ChatsListPage() {
       badgeColor: 'bg-amber-500/20 text-amber-400',
       onClick: () => {},
       locked: true,
-      comingSoon: false,
     },
   ];
 

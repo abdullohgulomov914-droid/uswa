@@ -34,8 +34,8 @@ export class ApiClient {
       ...options.headers as Record<string, string>,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (this.token || localStorage.getItem('token')) {
+      headers['Authorization'] = `Bearer ${this.token || localStorage.getItem('token')}`;
     }
 
     try {

@@ -105,35 +105,6 @@ export function CommunityChat() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {/* Uswaa AI */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3 items-start">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
-            <Sparkles size={16} className="text-white" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-emerald-400">Uswaa AI</span>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Beta</span>
-            </div>
-            <button
-              onClick={() => setShowAiToast(true)}
-              className="bg-slate-800/80 border border-emerald-500/20 rounded-2xl rounded-tl-sm px-4 py-3 text-left w-full hover:border-emerald-500/40 transition-all active:scale-[0.98]"
-            >
-              <p className="text-sm text-slate-200 mb-1">Salom! Men Uswaa AI — sizning shaxsiy tiklanish yordamchingizman. 🌱</p>
-              <p className="text-xs text-slate-400">Istak kelganda, qiyin paytlarda men bilan gaplashing...</p>
-              <div className="mt-2 flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
-                <Sparkles size={12} /> Tez orada qo'shiladi →
-              </div>
-            </button>
-          </div>
-        </motion.div>
-
-        <div className="flex items-center gap-3 my-2">
-          <div className="flex-1 h-px bg-slate-800" />
-          <span className="text-[10px] text-slate-600">Hamjamiyat xabarlari</span>
-          <div className="flex-1 h-px bg-slate-800" />
-        </div>
-
         {loading ? (
           <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 text-emerald-400 animate-spin" /></div>
         ) : posts.length === 0 ? (

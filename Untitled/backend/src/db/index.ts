@@ -138,6 +138,18 @@ export function initDatabase() {
     )
   `);
 
+  // Auto daily check-in
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS daily_checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      checkin_date TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, checkin_date),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Feedback replies (admin bot reply)
   db.exec(`
     CREATE TABLE IF NOT EXISTS feedback_replies (

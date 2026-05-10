@@ -246,4 +246,25 @@ router.get('/feedback-request/active', authenticateToken, asyncHandler(async (re
   res.json({ success: true, data: answered ? null : request });
 }));
 
+// Auto daily check-in (call on app open)
+router.post('/auto-checkin', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    db.prepare('INSERT INTO daily_checkins (user_id, checkin_date) VALUES (?, ?)').run(req.user!.id, today);
+    // New day — increment streak
+    const user = db.prepare('SELECT streak_days, longest_streak, xp FROM users WHERE id = ?').get(req.user!.id) as any;
+    const newStreak = user.streak_days + 1;
+    const newLongest = Math.max(newStreak, user.longest_streak);
+    const xpGain = 10;
+    const newXp = user.xp + xpGain;
+    const newLevel = Math.floor(newXp / 500) + 1;
+    db.prepare('UPDATE users SET streak_days=?, longest_streak=?, xp=?, level=? WHERE id=?').run(newStreak, newLongest, newXp, newLevel, req.user!.id);
+    db.prepare('INSERT INTO xp_log (user_id, amount, reason) VALUES (?, ?, ?)').run(req.user!.id, xpGain, 'Daily check-in');
+    res.json({ success: true, data: { streakDays: newStreak, xpGained: xpGain, isNew: true } });
+  } catch {
+    // Already checked in today
+    res.json({ success: true, data: { isNew: false } });
+  }
+}));
+
 export { router as userRouter };

@@ -42,6 +42,9 @@ export function Dashboard() {
 
         if (unreadRes.success) setUnreadCount(unreadRes.data?.count || 0);
 
+        // Auto daily check-in
+        api.request('/user/auto-checkin', { method: 'POST' });
+
         // Check active feedback request
         const fbRes = await api.request<any>('/user/feedback-request/active');
         if (fbRes.success && fbRes.data) setFeedbackRequest(fbRes.data);

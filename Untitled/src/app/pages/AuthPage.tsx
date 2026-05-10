@@ -145,14 +145,27 @@ export function AuthPage() {
     }
   };
 
-  const handlePinLogin = (currentPin: string) => {
-    if (verifyPin(currentPin)) {
-      sessionStorage.setItem('pin_verified', '1');
-      window.location.href = '/';
-    } else {
+  const handlePinLogin = async (currentPin: string) => {
+    if (!verifyPin(currentPin)) {
       setError("Noto'g'ri PIN kod");
       setLoginPin('');
+      return;
     }
+    // Token yo'q bo'lsa Telegram orqali qayta auth
+    const token = localStorage.getItem('token');
+    if (!token && window.Telegram?.WebApp?.initData) {
+      try {
+        const response = await api.request('/telegram/auth', {
+          method: 'POST',
+          body: JSON.stringify({ initData: window.Telegram.WebApp.initData }),
+        });
+        if (response.success && response.data) {
+          login((response.data as any).user, (response.data as any).token);
+        }
+      } catch { /* silent */ }
+    }
+    sessionStorage.setItem('pin_verified', '1');
+    window.location.href = '/';
   };
 
   const appendPin = (val: string, setter: (v: string) => void, current: string, onComplete?: (v: string) => void) => {
