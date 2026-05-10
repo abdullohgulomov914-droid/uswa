@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from "react-router";
-import { Home, BookOpen, Activity, TriangleAlert, RefreshCw, Settings } from "lucide-react";
+import { Home, BookOpen, Activity, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
 // Sahifalar navbar ko'rsatilmasin
@@ -26,9 +26,9 @@ export function AppLayout() {
               {({ isActive }) => (
                 <motion.div
                   whileTap={{ scale: 0.9 }}
-                  className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20 border-4 border-slate-950 ${isActive ? 'bg-emerald-400 text-slate-900' : 'bg-emerald-500 text-white'}`}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20 border-4 border-slate-950 overflow-hidden ${isActive ? 'ring-2 ring-emerald-400' : ''}`}
                 >
-                  <TriangleAlert size={32} strokeWidth={2.5} />
+                  <img src="/emergency-icon.jpg" alt="SOS" className="w-full h-full object-cover rounded-full" />
                 </motion.div>
               )}
             </NavLink>

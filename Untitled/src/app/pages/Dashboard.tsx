@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from "motion/react";
-import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen, Bell, Settings } from "lucide-react";
+import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen, Bell, Settings, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { api } from '../../lib/api';
 
@@ -17,14 +17,11 @@ interface UserStats {
 export function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadUserData();
-  }, []);
+  useEffect(() => { loadUserData(); }, []);
 
   const loadUserData = async () => {
     try {
@@ -33,11 +30,15 @@ export function Dashboard() {
       if (userResponse.success && userResponse.data) {
         const userData = userResponse.data as any;
         setIsAdmin(Boolean(userData.isAdmin));
-        api.request<any>('/notifications/unread').then(r => {
-          if (r.success) setUnreadCount(r.data?.count || 0);
-        });
-        // Also fetch buddy = await api.request<any>('/community/buddy');
-        const articlesRes = await api.request<any>('/science/articles');
+
+        const [buddyRes, articlesRes, unreadRes] = await Promise.all([
+          api.request<any>('/community/buddy'),
+          api.request<any>('/science/articles'),
+          api.request<any>('/notifications/unread'),
+        ]);
+
+        if (unreadRes.success) setUnreadCount(unreadRes.data?.count || 0);
+
         setStats({
           displayName: userData.displayName || 'Foydalanuvchi',
           streakDays: userData.streakDays || 0,
@@ -60,8 +61,8 @@ export function Dashboard() {
           });
         }
       }
-    } catch (err) {
-      setError('Ma\'lumotlarni yuklashda xatolik');
+    } catch {
+      // silent
     } finally {
       setLoading(false);
     }
@@ -81,45 +82,45 @@ export function Dashboard() {
   const level = stats?.level || 1;
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-5 flex flex-col gap-5 pb-28">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mt-4 flex items-center justify-between"
       >
-        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
-          Men {userName} - sog'lom insonman.
+        <h1 className="text-xl font-bold text-white leading-tight">
+          Men {userName}<br />
+          <span className="text-emerald-400">sog'lom insonman.</span>
         </h1>
+
+        {/* Header actions */}
         <div className="flex items-center gap-2">
+          {/* Notifications */}
           <button
             onClick={() => navigate('/notifications')}
-            className="relative w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all shrink-0"
+            className="relative w-10 h-10 rounded-2xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-slate-800 transition-all"
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-emerald-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center px-1">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
+
+          {/* Chats */}
           <button
             onClick={() => navigate('/chats')}
-            className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all shrink-0"
+            className="w-10 h-10 rounded-2xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500/40 hover:bg-slate-800 transition-all"
           >
             <MessageCircle size={18} />
-          </button>
-          <button
-            onClick={() => navigate('/settings')}
-            className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all shrink-0"
-          >
-            <Settings size={18} />
           </button>
         </div>
       </motion.header>
 
-      {/* Main Stats Card - clickable */}
-      <motion.div 
+      {/* Main Stats Card */}
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
@@ -127,7 +128,6 @@ export function Dashboard() {
         onClick={() => navigate('/streak')}
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10" />
-        
         <div className="flex justify-between items-end mb-6 relative z-10">
           <div>
             <h2 className="text-slate-400 text-sm font-medium mb-1">Zanjirni uzma</h2>
@@ -140,15 +140,13 @@ export function Dashboard() {
             <Flame className="text-emerald-400" fill="currentColor" size={24} />
           </div>
         </div>
-
-        {/* 90-day progress */}
         <div className="space-y-2 relative z-10">
           <div className="flex justify-between text-xs font-medium">
             <span className="text-emerald-400">Miya tiklanishi</span>
             <span className="text-slate-500">90 kunga maqsad</span>
           </div>
           <div className="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 1, ease: "easeOut" }}
@@ -161,24 +159,10 @@ export function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Quick Actions / Stages */}
-      <div className="grid grid-cols-2 gap-4">
-        <ActionCard 
-          icon={<Brain className="text-blue-400" />}
-          title="Miya holati"
-          subtitle="Tahlil"
-          to="/science"
-          delay={0.2}
-          color="blue"
-        />
-        <ActionCard 
-          icon={<Shield className="text-purple-400" />}
-          title="STAR+ Jurnal"
-          subtitle="Qaydlar"
-          to="/journal"
-          delay={0.3}
-          color="purple"
-        />
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <ActionCard icon={<Brain className="text-blue-400" />} title="Miya holati" subtitle="Tahlil" to="/science" delay={0.2} />
+        <ActionCard icon={<Shield className="text-purple-400" />} title="STAR+ Jurnal" subtitle="Qaydlar" to="/journal" delay={0.3} />
       </div>
 
       {/* Featured article */}
@@ -204,14 +188,14 @@ export function Dashboard() {
         </motion.div>
       )}
 
-      {/* Community / Buddy snapshot */}
-      <motion.div 
+      {/* Level card */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 mt-2"
+        className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <Award size={16} className="text-amber-400" />
             Jangchi darajasi
@@ -230,28 +214,55 @@ export function Dashboard() {
               onClick={() => navigate(`/chat/${stats.buddyId}`)}
               className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-xl transition-colors border border-emerald-500/20"
             >
-              <MessageCircle size={16} />
-              Chat
+              <MessageCircle size={16} /> Chat
             </button>
           )}
         </div>
       </motion.div>
-      
+
+      {/* Settings card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden"
+      >
+        <div className="px-5 py-3 border-b border-slate-800">
+          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <Settings size={15} className="text-slate-400" /> Sozlamalar
+          </h3>
+        </div>
+        <div className="divide-y divide-slate-800/60">
+          <SettingsRow icon="🔔" label="Bildirishnomalar" onClick={() => navigate('/notifications')} badge={unreadCount > 0 ? String(unreadCount) : undefined} />
+          <SettingsRow icon="📊" label="So'rovnomalar" onClick={() => navigate('/polls')} />
+          <SettingsRow icon="🔒" label="PIN kodni o'zgartirish" onClick={() => { localStorage.removeItem('pin'); sessionStorage.removeItem('pin_verified'); window.location.href = '/auth'; }} />
+          {isAdmin && <SettingsRow icon="⚙️" label="Admin panel" onClick={() => navigate('/admin')} highlight />}
+          <SettingsRow icon="🚪" label="Chiqish" onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/auth'; }} danger />
+        </div>
+      </motion.div>
     </div>
   );
 }
 
-function ActionCard({ icon, title, subtitle, to, delay, color }: { icon: React.ReactNode, title: string, subtitle: string, to: string, delay: number, color: string }) {
+function SettingsRow({ icon, label, onClick, badge, highlight, danger }: {
+  icon: string; label: string; onClick: () => void;
+  badge?: string; highlight?: boolean; danger?: boolean;
+}) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-    >
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-800/40 transition-colors text-left">
+      <span className="text-base">{icon}</span>
+      <span className={`flex-1 text-sm font-medium ${danger ? 'text-rose-400' : highlight ? 'text-emerald-400' : 'text-slate-200'}`}>{label}</span>
+      {badge && <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold">{badge}</span>}
+      <ChevronRight size={14} className="text-slate-600" />
+    </button>
+  );
+}
+
+function ActionCard({ icon, title, subtitle, to, delay }: { icon: React.ReactNode; title: string; subtitle: string; to: string; delay: number }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
       <Link to={to} className="block p-4 bg-slate-900/60 backdrop-blur-sm border border-slate-800 rounded-3xl hover:bg-slate-800/60 transition-colors">
-        <div className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center mb-3">
-          {icon}
-        </div>
+        <div className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center mb-3">{icon}</div>
         <h4 className="font-semibold text-sm">{title}</h4>
         <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
       </Link>
