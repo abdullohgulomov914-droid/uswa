@@ -3,12 +3,18 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install build tools for native modules (better-sqlite3)
+RUN apk add --no-cache python3 make g++
+
 # Copy backend files from subdirectory
 COPY Untitled/backend/package*.json ./
 COPY Untitled/backend/tsconfig.json ./
 
-# Install dependencies (skip postinstall build)
-RUN npm install --ignore-scripts
+# Install dependencies
+RUN npm install
+
+# Rebuild better-sqlite3 to compile native bindings for Alpine
+RUN npm rebuild better-sqlite3 --build-from-source
 
 # Copy source code
 COPY Untitled/backend/src ./src
