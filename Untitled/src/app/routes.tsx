@@ -10,6 +10,7 @@ import { BuddyChat } from "./pages/BuddyChat";
 import { StreakAnalytics } from "./pages/StreakAnalytics";
 import { LevelPage } from "./pages/LevelPage";
 import { AdminPanel } from "./pages/AdminPanel";
+import { CommunityChat } from "./pages/CommunityChat";
 
 // Auth guard component - checks on every render
 function AuthGuard() {
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: "streak", Component: StreakAnalytics },
       { path: "level", Component: LevelPage },
       { path: "admin", Component: AdminPanel },
+      { path: "community", Component: CommunityChat },
     ],
   },
 ]);
