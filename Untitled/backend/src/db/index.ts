@@ -5,9 +5,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = process.env.DB_PATH || process.env.RAILWAY_VOLUME_MOUNT_PATH 
-  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH || '', 'app.db')
-  : path.join(__dirname, '../../data/app.db');
+const dbPath = process.env.DB_PATH 
+  ? path.join(process.env.DB_PATH)
+  : process.env.RAILWAY_VOLUME_MOUNT_PATH 
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'app.db')
+    : path.join(__dirname, '../../data/app.db');
 
 export const db = new Database(dbPath);
 
