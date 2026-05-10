@@ -10,7 +10,7 @@ const router = Router();
 router.get('/me', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
   const stmt = db.prepare(`
     SELECT id, username, email, display_name, streak_days, longest_streak, 
-           last_relapse_date, start_date, xp, level, created_at
+           last_relapse_date, start_date, xp, level, is_admin, created_at
     FROM users WHERE id = ?
   `);
   const user = stmt.get(req.user!.id) as any;
@@ -37,6 +37,7 @@ router.get('/me', authenticateToken, asyncHandler(async (req: AuthRequest, res) 
       xp: user.xp,
       level: user.level,
       progressPercent: Math.min((user.streak_days / 90) * 100, 100),
+      isAdmin: Boolean(user.is_admin),
       brainStats,
     },
   });
