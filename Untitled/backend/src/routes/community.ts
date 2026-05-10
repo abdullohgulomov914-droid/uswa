@@ -156,8 +156,9 @@ router.get('/buddy', authenticateToken, asyncHandler(async (req: AuthRequest, re
       return;
     }
     
-    // Generate anonymous ID for fallback
-    const anonymousId = `uswaa[${fallback.id.toString().padStart(8, '0')}]`;
+    // Generate random 8-digit anonymous ID for fallback
+    const randomId = Math.floor(10000000 + Math.random() * 90000000);
+    const anonymousId = `uswaa[${randomId.toString().padStart(8, '0')}]`;
     
     res.json({
       success: true,
@@ -171,8 +172,9 @@ router.get('/buddy', authenticateToken, asyncHandler(async (req: AuthRequest, re
     return;
   }
   
-  // Generate anonymous ID for buddy
-  const anonymousId = `uswaa[${buddy.id.toString().padStart(8, '0')}]`;
+  // Generate random 8-digit anonymous ID
+  const randomId = Math.floor(10000000 + Math.random() * 90000000);
+  const anonymousId = `uswaa[${randomId.toString().padStart(8, '0')}]`;
   
   res.json({
     success: true,

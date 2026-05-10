@@ -46,7 +46,7 @@ export function initTelegramBot() {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [[
-          { text: "🚀 Identity Shiftni ochish", web_app: { url: process.env.TELEGRAM_WEB_APP_URL || 'https://uswa.vercel.app' } }
+          { text: "🚀 USWA'ni ochish", web_app: { url: process.env.TELEGRAM_WEB_APP_URL || 'https://uswa-delta.vercel.app' } }
         ]]
       }
     });
