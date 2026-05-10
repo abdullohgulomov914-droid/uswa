@@ -108,8 +108,8 @@ export function AuthPage() {
           setError((response.error?.message) || 'Telegram orqali kirishda xatolik');
         }
       } else {
-        window.open('https://t.me/uswaaabot', '_blank');
-        setError('Ilovani Telegram orqali oching: @uswaaabot');
+        window.open('https://t.me/Uswaabot', '_blank');
+        setError('Ilovani Telegram orqali oching: @Uswaabot');
       }
     } catch {
       setError("Xatolik yuz berdi. Qaytadan urinib ko'ring.");

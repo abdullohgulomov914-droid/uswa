@@ -12,8 +12,10 @@ router.post('/auth', asyncHandler(async (req, res) => {
   const schema = z.object({ initData: z.string() });
   const { initData } = schema.parse(req.body);
 
-  // Validate Telegram Web App data
+  console.log('📨 Telegram auth attempt, initData length:', initData.length);
+
   const validation = validateTelegramData(initData);
+  console.log('🔐 Validation result:', validation.valid, 'user:', validation.user?.id);
 
   if (!validation.valid || !validation.user) {
     res.status(401).json({ success: false, error: { message: 'Invalid Telegram data', code: 'INVALID_TELEGRAM_DATA' } });
@@ -137,8 +139,8 @@ router.get('/bot-info', asyncHandler(async (_req, res) => {
   res.json({
     success: true,
     data: {
-      botUsername: `uswaaabot`,
-      botLink: `https://t.me/uswaaabot`,
+      botUsername: `Uswaabot`,
+      botLink: `https://t.me/Uswaabot`,
     },
   });
 }));
