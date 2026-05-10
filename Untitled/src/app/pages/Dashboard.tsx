@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from "motion/react";
-import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen } from "lucide-react";
+import { Flame, Brain, Shield, Award, ChevronRight, Loader2, MessageCircle, BookOpen, Settings } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { api } from '../../lib/api';
 
@@ -18,6 +18,7 @@ export function Dashboard() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,8 +31,8 @@ export function Dashboard() {
       const userResponse = await api.getMe();
       if (userResponse.success && userResponse.data) {
         const userData = userResponse.data as any;
-        // Also fetch buddy
-        const buddyRes = await api.request<any>('/community/buddy');
+        setIsAdmin(Boolean(userData.isAdmin));
+        // Also fetch buddy = await api.request<any>('/community/buddy');
         const articlesRes = await api.request<any>('/science/articles');
         setStats({
           displayName: userData.displayName || 'Foydalanuvchi',
@@ -92,6 +93,14 @@ export function Dashboard() {
         >
           <MessageCircle size={18} />
         </button>
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0"
+          >
+            <Settings size={18} />
+          </button>
+        )}
       </motion.header>
 
       {/* Main Stats Card - clickable */}
