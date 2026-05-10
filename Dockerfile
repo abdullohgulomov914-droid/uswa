@@ -6,10 +6,9 @@ WORKDIR /app
 # Copy backend files from subdirectory
 COPY Untitled/backend/package*.json ./
 COPY Untitled/backend/tsconfig.json ./
-COPY Untitled/backend/.env.example ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (skip postinstall build)
+RUN npm install --ignore-scripts
 
 # Copy source code
 COPY Untitled/backend/src ./src
@@ -17,11 +16,11 @@ COPY Untitled/backend/src ./src
 # Create data directory (SQLite will use this)
 RUN mkdir -p /data
 
-# Build TypeScript
-RUN npm run build
+# Build TypeScript manually
+RUN npx tsc
 
 # Expose port
 EXPOSE 3001
 
 # Start command
-CMD ["sh", "-c", "mkdir -p /data && npm run db:init && npm start"]
+CMD ["sh", "-c", "mkdir -p /data && node dist/db/init.js && node dist/server.js"]
