@@ -79,7 +79,7 @@ export function AuthPage() {
         }
       } else {
         // Open Telegram bot for external login
-        window.open('https://t.me/identityshift_bot', '_blank');
+        window.open('https://t.me/uswaaabot', '_blank');
         setError('Telegram bot orqali davom eting');
       }
     } catch (err) {
