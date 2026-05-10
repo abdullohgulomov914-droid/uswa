@@ -137,8 +137,8 @@ router.get('/bot-info', asyncHandler(async (_req, res) => {
   res.json({
     success: true,
     data: {
-      botUsername: `identityshift_bot`, // You'll need to update this with actual bot username
-      botLink: `https://t.me/identityshift_bot`,
+      botUsername: `uswaaabot`,
+      botLink: `https://t.me/uswaaabot`,
     },
   });
 }));
