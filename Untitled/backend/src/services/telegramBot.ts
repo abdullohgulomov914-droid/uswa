@@ -150,7 +150,7 @@ export function initTelegramBot() {
       `🎯 Daraja: ${user.level}\n` +
       `📈 Tiklanish: ${Math.round(progress)}%`;
 
-    await ctx.reply(message, getMainKeyboard());
+    await ctx.reply(message, getFeedbackKeyboard());
   });
 
   // Check-in command
@@ -186,7 +186,7 @@ export function initTelegramBot() {
       `✅ Kunlik tekshiruv muvaffaqiyatli!\n\n` +
       `+${xpGain} XP olishdingiz!\n` +
       `🔥 Zanjir: ${newStreak} kun`,
-      getMainKeyboard()
+      getFeedbackKeyboard()
     );
   });
 
