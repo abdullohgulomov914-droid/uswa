@@ -20,9 +20,12 @@ export function initDatabase() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
+      username TEXT UNIQUE,
+      email TEXT UNIQUE,
+      password TEXT,
+      telegram_id TEXT UNIQUE,
+      telegram_username TEXT,
+      telegram_photo_url TEXT,
       display_name TEXT,
       streak_days INTEGER DEFAULT 0,
       longest_streak INTEGER DEFAULT 0,
@@ -30,6 +33,8 @@ export function initDatabase() {
       start_date TEXT NOT NULL,
       xp INTEGER DEFAULT 0,
       level INTEGER DEFAULT 1,
+      is_admin INTEGER DEFAULT 0,
+      is_banned INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
@@ -99,6 +104,34 @@ export function initDatabase() {
       user_id INTEGER NOT NULL,
       amount INTEGER NOT NULL,
       reason TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Admin activity log
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_id INTEGER NOT NULL,
+      action TEXT NOT NULL,
+      target_user_id INTEGER,
+      details TEXT,
+      ip_address TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Telegram sessions for mini app
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS telegram_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      telegram_id TEXT NOT NULL,
+      auth_date INTEGER NOT NULL,
+      hash TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )

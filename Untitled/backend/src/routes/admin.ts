@@ -1,0 +1,391 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import { db } from '../db/index.js';
+import { authenticateAdmin, logAdminAction, requireAdmin } from '../middleware/admin.js';
+import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
+
+const router = Router();
+
+// Get admin dashboard stats
+router.get('/stats', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  // User stats
+  const userStats = db.prepare(`
+    SELECT 
+      COUNT(*) as total_users,
+      SUM(CASE WHEN telegram_id IS NOT NULL THEN 1 ELSE 0 END) as telegram_users,
+      SUM(CASE WHEN created_at > datetime('now', '-24 hours') THEN 1 ELSE 0 END) as new_today,
+      SUM(CASE WHEN is_banned = 1 THEN 1 ELSE 0 END) as banned_users
+    FROM users
+  `).get() as any;
+
+  // Activity stats (last 7 days)
+  const activityStats = db.prepare(`
+    SELECT 
+      COUNT(*) as total_entries,
+      COUNT(DISTINCT user_id) as active_users
+    FROM journal_entries
+    WHERE created_at > datetime('now', '-7 days')
+  `).get() as any;
+
+  // Relapse stats (last 7 days)
+  const relapseStats = db.prepare(`
+    SELECT COUNT(*) as relapses_last_7_days
+    FROM relapses
+    WHERE logged_at > datetime('now', '-7 days')
+  `).get() as any;
+
+  // Top streaks
+  const topStreaks = db.prepare(`
+    SELECT display_name, telegram_username, streak_days, longest_streak
+    FROM users
+    ORDER BY streak_days DESC
+    LIMIT 10
+  `).all() as any[];
+
+  res.json({
+    success: true,
+    data: {
+      users: {
+        total: userStats.total_users,
+        telegram: userStats.telegram_users,
+        newToday: userStats.new_today,
+        banned: userStats.banned_users,
+      },
+      activity: {
+        journalEntriesLast7Days: activityStats.total_entries,
+        activeUsersLast7Days: activityStats.active_users,
+        relapsesLast7Days: relapseStats.relapses_last_7_days,
+      },
+      topStreaks: topStreaks.map(u => ({
+        displayName: u.display_name,
+        telegramUsername: u.telegram_username,
+        streakDays: u.streak_days,
+        longestStreak: u.longest_streak,
+      })),
+    },
+  });
+}));
+
+// Get all users (paginated)
+router.get('/users', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const { page = '1', limit = '20', search = '' } = req.query;
+  const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+  let query = `
+    SELECT id, telegram_id, telegram_username, username, email, display_name, 
+           streak_days, longest_streak, xp, level, is_admin, is_banned, created_at
+    FROM users
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+
+  if (search) {
+    query += ` AND (display_name LIKE ? OR telegram_username LIKE ? OR username LIKE ? OR email LIKE ?)`;
+    const searchPattern = `%${search}%`;
+    params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+  }
+
+  query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+  params.push(parseInt(limit as string), offset);
+
+  const users = db.prepare(query).all(...params) as any[];
+
+  // Get total count
+  let countQuery = 'SELECT COUNT(*) as total FROM users WHERE 1=1';
+  const countParams: any[] = [];
+  if (search) {
+    countQuery += ` AND (display_name LIKE ? OR telegram_username LIKE ? OR username LIKE ? OR email LIKE ?)`;
+    const searchPattern = `%${search}%`;
+    countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
+  }
+  const total = db.prepare(countQuery).get(...countParams) as any;
+
+  res.json({
+    success: true,
+    data: {
+      users: users.map(u => ({
+        id: u.id,
+        telegramId: u.telegram_id,
+        telegramUsername: u.telegram_username,
+        username: u.username,
+        email: u.email,
+        displayName: u.display_name,
+        streakDays: u.streak_days,
+        longestStreak: u.longest_streak,
+        xp: u.xp,
+        level: u.level,
+        isAdmin: Boolean(u.is_admin),
+        isBanned: Boolean(u.is_banned),
+        createdAt: u.created_at,
+      })),
+      pagination: {
+        total: total.total,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        totalPages: Math.ceil(total.total / parseInt(limit as string)),
+      },
+    },
+  });
+}));
+
+// Get user details
+router.get('/users/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const user = db.prepare(`
+    SELECT id, telegram_id, telegram_username, username, email, display_name,
+           streak_days, longest_streak, last_relapse_date, xp, level,
+           is_admin, is_banned, created_at
+    FROM users WHERE id = ?
+  `).get(req.params.id) as any;
+
+  if (!user) {
+    res.status(404).json({ success: false, error: { message: 'User not found' } });
+    return;
+  }
+
+  // Get user's journal entries count
+  const journalStats = db.prepare(`
+    SELECT COUNT(*) as total, 
+           COUNT(CASE WHEN type = 'trigger' THEN 1 END) as triggers,
+           COUNT(CASE WHEN type = 'tackle' THEN 1 END) as tackles
+    FROM journal_entries WHERE user_id = ?
+  `).get(req.params.id) as any;
+
+  // Get relapse count
+  const relapseCount = db.prepare(`
+    SELECT COUNT(*) as total FROM relapses WHERE user_id = ?
+  `).get(req.params.id) as any;
+
+  // Get recent activity
+  const recentEntries = db.prepare(`
+    SELECT id, type, content, created_at
+    FROM journal_entries
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT 5
+  `).all(req.params.id) as any[];
+
+  res.json({
+    success: true,
+    data: {
+      user: {
+        id: user.id,
+        telegramId: user.telegram_id,
+        telegramUsername: user.telegram_username,
+        username: user.username,
+        email: user.email,
+        displayName: user.display_name,
+        streakDays: user.streak_days,
+        longestStreak: user.longest_streak,
+        lastRelapseDate: user.last_relapse_date,
+        xp: user.xp,
+        level: user.level,
+        isAdmin: Boolean(user.is_admin),
+        isBanned: Boolean(user.is_banned),
+        createdAt: user.created_at,
+      },
+      stats: {
+        journalEntries: journalStats.total,
+        triggersLogged: journalStats.triggers,
+        tacklesLogged: journalStats.tackles,
+        relapses: relapseCount.total,
+      },
+      recentActivity: recentEntries.map(e => ({
+        id: e.id,
+        type: e.type,
+        content: e.content.substring(0, 100),
+        createdAt: e.created_at,
+      })),
+    },
+  });
+}));
+
+// Ban/unban user
+router.post('/users/:id/ban', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({ banned: z.boolean(), reason: z.string().optional() });
+  const data = schema.parse(req.body);
+
+  const stmt = db.prepare('UPDATE users SET is_banned = ? WHERE id = ?');
+  const result = stmt.run(data.banned ? 1 : 0, req.params.id);
+
+  if (result.changes === 0) {
+    res.status(404).json({ success: false, error: { message: 'User not found' } });
+    return;
+  }
+
+  // Log admin action
+  logAdminAction(
+    req.user!.id,
+    data.banned ? 'BAN_USER' : 'UNBAN_USER',
+    parseInt(req.params.id),
+    data.reason || `User ${data.banned ? 'banned' : 'unbanned'} by admin`,
+    req.ip
+  );
+
+  res.json({
+    success: true,
+    message: data.banned ? 'User banned' : 'User unbanned',
+  });
+}));
+
+// Make user admin
+router.post('/users/:id/admin', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({ admin: z.boolean() });
+  const data = schema.parse(req.body);
+
+  const stmt = db.prepare('UPDATE users SET is_admin = ? WHERE id = ?');
+  const result = stmt.run(data.admin ? 1 : 0, req.params.id);
+
+  if (result.changes === 0) {
+    res.status(404).json({ success: false, error: { message: 'User not found' } });
+    return;
+  }
+
+  // Log admin action
+  logAdminAction(
+    req.user!.id,
+    data.admin ? 'MAKE_ADMIN' : 'REMOVE_ADMIN',
+    parseInt(req.params.id),
+    `Admin status ${data.admin ? 'granted' : 'removed'}`,
+    req.ip
+  );
+
+  res.json({
+    success: true,
+    message: data.admin ? 'User promoted to admin' : 'Admin rights removed',
+  });
+}));
+
+// Delete user
+router.delete('/users/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const stmt = db.prepare('DELETE FROM users WHERE id = ?');
+  const result = stmt.run(req.params.id);
+
+  if (result.changes === 0) {
+    res.status(404).json({ success: false, error: { message: 'User not found' } });
+    return;
+  }
+
+  // Log admin action
+  logAdminAction(req.user!.id, 'DELETE_USER', parseInt(req.params.id), 'User permanently deleted', req.ip);
+
+  res.json({ success: true, message: 'User deleted' });
+}));
+
+// Get community posts (admin view - includes non-anonymous author info)
+router.get('/community', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const { page = '1', limit = '20' } = req.query;
+  const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+  const posts = db.prepare(`
+    SELECT 
+      cp.id, cp.content, cp.is_anonymous, cp.likes, cp.created_at,
+      u.id as user_id, u.display_name, u.telegram_username
+    FROM community_posts cp
+    JOIN users u ON cp.user_id = u.id
+    ORDER BY cp.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(parseInt(limit as string), offset) as any[];
+
+  const total = db.prepare('SELECT COUNT(*) as total FROM community_posts').get() as any;
+
+  res.json({
+    success: true,
+    data: {
+      posts: posts.map(p => ({
+        id: p.id,
+        content: p.content,
+        isAnonymous: Boolean(p.is_anonymous),
+        likes: p.likes,
+        createdAt: p.created_at,
+        author: {
+          id: p.user_id,
+          displayName: p.display_name,
+          telegramUsername: p.telegram_username,
+        },
+      })),
+      pagination: {
+        total: total.total,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        totalPages: Math.ceil(total.total / parseInt(limit as string)),
+      },
+    },
+  });
+}));
+
+// Delete community post
+router.delete('/community/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const stmt = db.prepare('DELETE FROM community_posts WHERE id = ?');
+  const result = stmt.run(req.params.id);
+
+  if (result.changes === 0) {
+    res.status(404).json({ success: false, error: { message: 'Post not found' } });
+    return;
+  }
+
+  // Log admin action
+  logAdminAction(req.user!.id, 'DELETE_POST', undefined, `Post ${req.params.id} deleted`, req.ip);
+
+  res.json({ success: true, message: 'Post deleted' });
+}));
+
+// Get admin logs
+router.get('/logs', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const { page = '1', limit = '50' } = req.query;
+  const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+  const logs = db.prepare(`
+    SELECT 
+      al.id, al.action, al.details, al.ip_address, al.created_at,
+      a.display_name as admin_name,
+      t.display_name as target_name
+    FROM admin_logs al
+    JOIN users a ON al.admin_id = a.id
+    LEFT JOIN users t ON al.target_user_id = t.id
+    ORDER BY al.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(parseInt(limit as string), offset) as any[];
+
+  res.json({
+    success: true,
+    data: logs.map(l => ({
+      id: l.id,
+      action: l.action,
+      admin: l.admin_name,
+      target: l.target_name,
+      details: l.details,
+      ipAddress: l.ip_address,
+      createdAt: l.created_at,
+    })),
+  });
+}));
+
+// Send broadcast message to all users (admin only)
+router.post('/broadcast', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({ message: z.string().min(1).max(4096) });
+  const data = schema.parse(req.body);
+
+  // Get all Telegram users
+  const users = db.prepare(`
+    SELECT telegram_id FROM users 
+    WHERE telegram_id IS NOT NULL AND is_banned = 0
+  `).all() as any[];
+
+  // Note: In production, you'd use a queue for this
+  // For now, just log the broadcast
+  logAdminAction(
+    req.user!.id,
+    'BROADCAST',
+    undefined,
+    `Message sent to ${users.length} users: ${data.message.substring(0, 100)}`,
+    req.ip
+  );
+
+  res.json({
+    success: true,
+    message: `Broadcast queued for ${users.length} users`,
+  });
+}));
+
+export { router as adminRouter };

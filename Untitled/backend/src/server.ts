@@ -7,7 +7,10 @@ import { journalRouter } from './routes/journal.js';
 import { relapseRouter } from './routes/relapse.js';
 import { communityRouter } from './routes/community.js';
 import { emergencyRouter } from './routes/emergency.js';
+import { adminRouter } from './routes/admin.js';
+import { telegramRouter } from './routes/telegram.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { initTelegramBot } from './services/telegramBot.js';
 
 dotenv.config();
 
@@ -25,6 +28,8 @@ app.use('/api/journal', journalRouter);
 app.use('/api/relapse', relapseRouter);
 app.use('/api/community', communityRouter);
 app.use('/api/emergency', emergencyRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/telegram', telegramRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -36,4 +41,7 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  
+  // Initialize Telegram Bot
+  initTelegramBot();
 });
