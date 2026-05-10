@@ -122,7 +122,7 @@ router.get('/buddy', authenticateToken, asyncHandler(async (req: AuthRequest, re
   
   // Find someone with similar streak (+/- 3 days)
   const buddyStmt = db.prepare(`
-    SELECT id, display_name, streak_days, level
+    SELECT id, streak_days, level
     FROM users
     WHERE id != ? 
       AND streak_days BETWEEN ? AND ?
@@ -139,7 +139,7 @@ router.get('/buddy', authenticateToken, asyncHandler(async (req: AuthRequest, re
   if (!buddy) {
     // Fallback: just get any other user
     const fallbackStmt = db.prepare(`
-      SELECT id, display_name, streak_days, level
+      SELECT id, streak_days, level
       FROM users
       WHERE id != ?
       ORDER BY RANDOM()
@@ -156,11 +156,14 @@ router.get('/buddy', authenticateToken, asyncHandler(async (req: AuthRequest, re
       return;
     }
     
+    // Generate anonymous ID for fallback
+    const anonymousId = `uswaa[${fallback.id.toString().padStart(8, '0')}]`;
+    
     res.json({
       success: true,
       data: {
         id: fallback.id,
-        displayName: fallback.display_name,
+        displayName: anonymousId,
         streakDays: fallback.streak_days,
         level: fallback.level,
       },
@@ -168,11 +171,14 @@ router.get('/buddy', authenticateToken, asyncHandler(async (req: AuthRequest, re
     return;
   }
   
+  // Generate anonymous ID for buddy
+  const anonymousId = `uswaa[${buddy.id.toString().padStart(8, '0')}]`;
+  
   res.json({
     success: true,
     data: {
       id: buddy.id,
-      displayName: buddy.display_name,
+      displayName: anonymousId,
       streakDays: buddy.streak_days,
       level: buddy.level,
     },
