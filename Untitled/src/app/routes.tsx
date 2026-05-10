@@ -14,6 +14,7 @@ import { CommunityChat } from "./pages/CommunityChat";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { PollsPage } from "./pages/PollsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ChatsListPage } from "./pages/ChatsListPage";
 
 // Auth guard component - checks on every render
 function AuthGuard() {
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
       { path: "notifications", Component: NotificationsPage },
       { path: "polls", Component: PollsPage },
       { path: "settings", Component: SettingsPage },
+      { path: "chats", Component: ChatsListPage },
     ],
   },
 ]);

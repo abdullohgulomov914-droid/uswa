@@ -104,7 +104,7 @@ export function Dashboard() {
             )}
           </button>
           <button
-            onClick={() => navigate('/community')}
+            onClick={() => navigate('/chats')}
             className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all shrink-0"
           >
             <MessageCircle size={18} />
