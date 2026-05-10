@@ -10,6 +10,7 @@ import { emergencyRouter } from './routes/emergency.js';
 import { adminRouter } from './routes/admin.js';
 import { telegramRouter } from './routes/telegram.js';
 import { chatRouter } from './routes/chat.js';
+import { scienceRouter } from './routes/science.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initTelegramBot } from './services/telegramBot.js';
 import { initDatabase } from './db/index.js';
@@ -38,6 +39,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/telegram', telegramRouter);
 
 app.use('/api/chat', chatRouter);
+app.use('/api/science', scienceRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

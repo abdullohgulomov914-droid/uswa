@@ -138,6 +138,32 @@ export function initDatabase() {
     )
   `);
 
+  // Articles (ilmiy maqolalar)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS articles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      content TEXT NOT NULL,
+      problem_type TEXT,
+      source TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Glossary (hislat lug'at)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS glossary (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      term TEXT NOT NULL UNIQUE,
+      definition TEXT NOT NULL,
+      category TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Buddy chat messages
   db.exec(`
     CREATE TABLE IF NOT EXISTS buddy_messages (

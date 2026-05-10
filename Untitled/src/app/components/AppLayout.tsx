@@ -30,8 +30,8 @@ export function AppLayout() {
           </NavLink>
         </div>
 
-        <NavItem to="/science" icon={<Activity size={24} />} label="Science" active={location.pathname === "/science"} />
-        <NavItem to="/relapse" icon={<RefreshCw size={24} />} label="Recovery" active={location.pathname === "/relapse"} />
+        <NavItem to="/science" icon={<Activity size={24} />} label="Ilmiy" active={location.pathname === "/science"} />
+        <NavItem to="/relapse" icon={<RefreshCw size={24} />} label="Tiklanish" active={location.pathname === "/relapse"} />
       </nav>
     </div>
   );

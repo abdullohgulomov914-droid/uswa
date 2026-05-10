@@ -507,4 +507,82 @@ router.get('/export/:userId?', authenticateToken, asyncHandler(async (req: AuthR
   });
 }));
 
+// Articles CRUD (admin)
+router.get('/articles', authenticateAdmin, asyncHandler(async (_req, res) => {
+  const articles = db.prepare('SELECT * FROM articles ORDER BY created_at DESC').all();
+  res.json({ success: true, data: articles });
+}));
+
+router.post('/articles', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({
+    title: z.string().min(1),
+    summary: z.string().min(1),
+    content: z.string().min(1),
+    problem_type: z.string().optional(),
+    source: z.string().optional(),
+  });
+  const data = schema.parse(req.body);
+  const result = db.prepare(
+    'INSERT INTO articles (title, summary, content, problem_type, source) VALUES (?, ?, ?, ?, ?)'
+  ).run(data.title, data.summary, data.content, data.problem_type || null, data.source || null);
+  res.status(201).json({ success: true, data: { id: result.lastInsertRowid, ...data } });
+}));
+
+router.patch('/articles/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({
+    title: z.string().min(1).optional(),
+    summary: z.string().min(1).optional(),
+    content: z.string().min(1).optional(),
+    problem_type: z.string().optional(),
+    source: z.string().optional(),
+  });
+  const data = schema.parse(req.body);
+  const sets = Object.keys(data).map(k => `${k} = ?`).join(', ');
+  const values = [...Object.values(data), req.params.id];
+  db.prepare(`UPDATE articles SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(...values);
+  res.json({ success: true });
+}));
+
+router.delete('/articles/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  db.prepare('DELETE FROM articles WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+}));
+
+// Glossary CRUD (admin)
+router.get('/glossary', authenticateAdmin, asyncHandler(async (_req, res) => {
+  const terms = db.prepare('SELECT * FROM glossary ORDER BY term ASC').all();
+  res.json({ success: true, data: terms });
+}));
+
+router.post('/glossary', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({
+    term: z.string().min(1),
+    definition: z.string().min(1),
+    category: z.string().optional(),
+  });
+  const data = schema.parse(req.body);
+  const result = db.prepare(
+    'INSERT INTO glossary (term, definition, category) VALUES (?, ?, ?)'
+  ).run(data.term, data.definition, data.category || null);
+  res.status(201).json({ success: true, data: { id: result.lastInsertRowid, ...data } });
+}));
+
+router.patch('/glossary/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({
+    term: z.string().min(1).optional(),
+    definition: z.string().min(1).optional(),
+    category: z.string().optional(),
+  });
+  const data = schema.parse(req.body);
+  const sets = Object.keys(data).map(k => `${k} = ?`).join(', ');
+  const values = [...Object.values(data), req.params.id];
+  db.prepare(`UPDATE glossary SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(...values);
+  res.json({ success: true });
+}));
+
+router.delete('/glossary/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  db.prepare('DELETE FROM glossary WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+}));
+
 export { router as adminRouter };

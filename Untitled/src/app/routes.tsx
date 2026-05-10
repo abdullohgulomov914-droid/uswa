@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { AppLayout } from "./components/AppLayout";
 import { Dashboard } from "./pages/Dashboard";
 import { Emergency } from "./pages/Emergency";
@@ -7,6 +7,8 @@ import { Science } from "./pages/Science";
 import { Relapse } from "./pages/Relapse";
 import { AuthPage } from "./pages/AuthPage";
 import { BuddyChat } from "./pages/BuddyChat";
+import { StreakAnalytics } from "./pages/StreakAnalytics";
+import { LevelPage } from "./pages/LevelPage";
 
 // Auth guard component - checks on every render
 function AuthGuard() {
@@ -36,6 +38,8 @@ export const router = createBrowserRouter([
       { path: "science", Component: Science },
       { path: "relapse", Component: Relapse },
       { path: "chat/:buddyId", Component: BuddyChat },
+      { path: "streak", Component: StreakAnalytics },
+      { path: "level", Component: LevelPage },
     ],
   },
 ]);

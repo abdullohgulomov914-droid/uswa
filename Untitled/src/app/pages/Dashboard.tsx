@@ -85,12 +85,13 @@ export function Dashboard() {
         </h1>
       </motion.header>
 
-      {/* Main Stats Card */}
+      {/* Main Stats Card - clickable */}
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-hidden"
+        className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+        onClick={() => navigate('/streak')}
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10" />
         
@@ -165,7 +166,7 @@ export function Dashboard() {
           Siz hozirda "Dopamin normallashuv" bosqichidasiz. Diqqatingiz va irodangiz har kungi o'tgan kun bilan kuchayib bormoqda.
         </p>
         <div className="flex gap-2">
-          <Link to="/journal" className="flex-1 flex items-center justify-center gap-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-xl transition-colors">
+          <Link to="/level" className="flex-1 flex items-center justify-center gap-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-xl transition-colors">
             Daraja haqida <ChevronRight size={16} />
           </Link>
           {stats?.buddyId && (

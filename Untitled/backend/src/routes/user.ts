@@ -205,4 +205,24 @@ function calculateLevelUp(xp: number) {
   };
 }
 
+// Update user profile (alias for /me PATCH)
+router.patch('/profile', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const updateSchema = z.object({
+    displayName: z.string().min(1).max(50).optional(),
+    age: z.number().min(13).max(100).optional(),
+    problem: z.string().min(1).max(100).optional(),
+  });
+  const data = updateSchema.parse(req.body);
+  const updates: string[] = [];
+  const values: any[] = [];
+  if (data.displayName !== undefined) { updates.push('display_name = ?'); values.push(data.displayName); }
+  if (data.age !== undefined) { updates.push('age = ?'); values.push(data.age); }
+  if (data.problem !== undefined) { updates.push('problem = ?'); values.push(data.problem); }
+  if (updates.length > 0) {
+    values.push(req.user!.id);
+    db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  }
+  res.json({ success: true, message: 'Profile updated' });
+}));
+
 export { router as userRouter };
