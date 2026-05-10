@@ -28,6 +28,29 @@ export function initTelegramBot() {
       return ctx.reply('Xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
     }
 
+    // Send greeting message
+    const greetingMessage = `🌟 *Identity Shift ga xush kelibsiz, ${firstName || 'Foydalanuvchi'}!*
+
+🛡️ *Sizning maxfiyligingiz biz uchun muhim*
+• Barcha ma'lumotlaringiz shifrlangan
+• Haqiqiy ismingiz hech kimga ko'rsatilmaydi
+• Faqat anonim *uswaa[xxxxxxxx]* identifikatori
+
+🚀 *Boshlash uchun:*
+1. Quyidagi tugmani bosing
+2. Onboardingni to'liqing
+3. PIN kod yarating
+4. Sog'lom hayot sari qadam qo'ying!`;
+
+    await ctx.reply(greetingMessage, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🚀 Identity Shiftni ochish", web_app: { url: process.env.TELEGRAM_WEB_APP_URL || 'https://uswa.vercel.app' } }
+        ]]
+      }
+    });
+
     // Check if user exists
     const stmt = db.prepare('SELECT * FROM users WHERE telegram_id = ?');
     let user = stmt.get(telegramId) as any;

@@ -126,20 +126,21 @@ export function AuthPage() {
   const completeRegistration = async () => {
     setIsLoading(true);
     try {
-      // Register with backend
-      const response = await api.register({
-        username: `user_${Date.now()}`,
-        email: `${Date.now()}@temp.user`,
-        password: pin,
-        displayName: name,
+      // Update existing Telegram user with onboarding data
+      const response = await api.request('/user/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          displayName: name,
+          age: parseInt(age),
+          problem: problem,
+        }),
       });
       
-      if (response.success && response.data) {
-        login(response.data, response.data.token);
+      if (response.success) {
         // Reload to go to main app
         window.location.href = '/';
       } else {
-        setError('Ro\'yxatdan o\'tishda xatolik');
+        setError('Profil yangilashda xatolik');
       }
     } catch (err) {
       setError('Xatolik yuz berdi');
@@ -230,13 +231,7 @@ export function AuthPage() {
               {!isLoading && <ChevronRight className="w-5 h-5" />}
             </button>
 
-            <button
-              onClick={() => setStep('onboarding')}
-              className="w-full py-3 text-slate-400 hover:text-white text-sm"
-            >
-              Telegramsiz davom etish
-            </button>
-          </motion.div>
+                      </motion.div>
         );
 
       case 'onboarding':
@@ -346,7 +341,7 @@ export function AuthPage() {
             </div>
             <h2 className="text-2xl font-bold text-white">PIN kod yarating</h2>
             <p className="text-slate-400 text-sm">
-              4 ta raqamdan iborat kod. Har safar kirishda so'raladi.
+              4 ta raqamdan iborat kod. Maxfiylikni saqlash uchun har safar kirishda so'raladi.
             </p>
 
             {error && (
