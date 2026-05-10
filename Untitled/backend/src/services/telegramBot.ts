@@ -18,6 +18,9 @@ export function initTelegramBot() {
 
   // Start command
   bot.command('start', async (ctx) => {
+    console.log('🚀 /start command received');
+    console.log('User data:', ctx.from);
+    
     const telegramId = ctx.from?.id.toString();
     const username = ctx.from?.username;
     const firstName = ctx.from?.first_name;
@@ -25,6 +28,7 @@ export function initTelegramBot() {
     const photoUrl = (ctx.from as any)?.photo_url;
 
     if (!telegramId) {
+      console.log('❌ No telegramId found');
       return ctx.reply('Xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
     }
 
