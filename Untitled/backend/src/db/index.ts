@@ -127,6 +127,17 @@ export function initDatabase() {
     )
   `);
 
+  // User feedback table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      telegram_id TEXT NOT NULL,
+      feedback_text TEXT NOT NULL,
+      feedback_type TEXT DEFAULT 'general',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Telegram sessions for mini app
   db.exec(`
     CREATE TABLE IF NOT EXISTS telegram_sessions (

@@ -293,7 +293,20 @@ export function initTelegramBot() {
         return ctx.reply('/emergency');
       case '📱 Ilova':
         return ctx.reply('/app');
+      case '💭 Fikr va Mulohaza':
+        return ctx.reply('✍️ Iltimos, fikr va mulohazalaringizni yozing. Biz ularni o\'qib o\'rganamiz va tizimni yaxshilash uchun ishlatamiz. Barcha fikrlar anonim saqlanadi.');
       default:
+        // Check if it's a feedback message (longer text)
+        if (text.length > 50) {
+          // Save feedback
+          const feedbackStmt = db.prepare(`
+            INSERT INTO user_feedback (telegram_id, feedback_text, feedback_type)
+            VALUES (?, ?, ?)
+          `);
+          feedbackStmt.run(telegramId, text, 'general');
+          
+          return ctx.reply('✅ Rahmat! Fikringiz anonim saqlandi. Tizimni yaxshilashda yordamingiz katta ahamiyatga ega.');
+        }
         // Log journal entry as trigger
         const journalStmt = db.prepare(`
           INSERT INTO journal_entries (user_id, type, content, created_at)
@@ -324,7 +337,8 @@ export function initTelegramBot() {
 function getMainKeyboard() {
   return Markup.keyboard([
     ['📊 Statistika', '✅ Tekshiruv'],
-    ['🆘 Yordam', '📱 Ilova']
+    ['🆘 Yordam', '📱 Ilova'],
+    ['💭 Fikr va Mulohaza']
   ]).resize();
 }
 
