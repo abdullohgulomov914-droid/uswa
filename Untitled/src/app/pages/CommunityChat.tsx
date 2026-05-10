@@ -53,17 +53,16 @@ export function CommunityChat() {
 
   const send = async () => {
     if (!content.trim() || posting) return;
+    const text = content.trim();
+    setContent('');
+    if (textareaRef.current) { textareaRef.current.style.height = 'auto'; }
     setPosting(true);
-    const res = await api.request<any>('/community', {
+    await api.request<any>('/community', {
       method: 'POST',
-      body: JSON.stringify({ content: content.trim(), isAnonymous: true }),
+      body: JSON.stringify({ content: text, isAnonymous: true }),
     });
-    if (res.success) {
-      setContent('');
-      if (textareaRef.current) textareaRef.current.style.height = 'auto';
-      const postsRes = await api.request<any>('/community');
-      if (postsRes.success && postsRes.data) setPosts(postsRes.data);
-    }
+    const postsRes = await api.request<any>('/community');
+    if (postsRes.success && postsRes.data) setPosts(postsRes.data);
     setPosting(false);
   };
 

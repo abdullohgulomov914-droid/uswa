@@ -220,41 +220,27 @@ export function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Settings card */}
+      {/* Settings card — simple */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.45 }}
-        className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden"
       >
-        <div className="px-5 py-3 border-b border-slate-800">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-            <Settings size={15} className="text-slate-400" /> Sozlamalar
-          </h3>
-        </div>
-        <div className="divide-y divide-slate-800/60">
-          <SettingsRow icon="🔔" label="Bildirishnomalar" onClick={() => navigate('/notifications')} badge={unreadCount > 0 ? String(unreadCount) : undefined} />
-          <SettingsRow icon="📊" label="So'rovnomalar" onClick={() => navigate('/polls')} />
-          <SettingsRow icon="🔒" label="PIN kodni o'zgartirish" onClick={() => { localStorage.removeItem('pin'); sessionStorage.removeItem('pin_verified'); window.location.href = '/auth'; }} />
-          {isAdmin && <SettingsRow icon="⚙️" label="Admin panel" onClick={() => navigate('/admin')} highlight />}
-          <SettingsRow icon="🚪" label="Chiqish" onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/auth'; }} danger />
-        </div>
+        <button
+          onClick={() => navigate('/settings')}
+          className="w-full flex items-center gap-4 p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:bg-slate-800/60 active:scale-[0.98] transition-all text-left"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center shrink-0">
+            <Settings size={20} className="text-slate-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">Sozlamalar</p>
+            <p className="text-xs text-slate-500 mt-0.5">Profil, bildirishnomalar, PIN</p>
+          </div>
+          <ChevronRight size={16} className="text-slate-600" />
+        </button>
       </motion.div>
     </div>
-  );
-}
-
-function SettingsRow({ icon, label, onClick, badge, highlight, danger }: {
-  icon: string; label: string; onClick: () => void;
-  badge?: string; highlight?: boolean; danger?: boolean;
-}) {
-  return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-800/40 transition-colors text-left">
-      <span className="text-base">{icon}</span>
-      <span className={`flex-1 text-sm font-medium ${danger ? 'text-rose-400' : highlight ? 'text-emerald-400' : 'text-slate-200'}`}>{label}</span>
-      {badge && <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold">{badge}</span>}
-      <ChevronRight size={14} className="text-slate-600" />
-    </button>
   );
 }
 
