@@ -11,8 +11,13 @@ import { adminRouter } from './routes/admin.js';
 import { telegramRouter } from './routes/telegram.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initTelegramBot } from './services/telegramBot.js';
+import { initDatabase } from './db/index.js';
 
 dotenv.config();
+
+// Initialize database
+initDatabase();
+console.log('✅ Database initialized');
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
