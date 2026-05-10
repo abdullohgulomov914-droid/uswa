@@ -585,4 +585,84 @@ router.delete('/glossary/:id', authenticateAdmin, asyncHandler(async (req: AuthR
   res.json({ success: true });
 }));
 
+// Real broadcast via Telegram bot
+router.post('/broadcast', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({ message: z.string().min(1).max(4096) });
+  const data = schema.parse(req.body);
+
+  const users = db.prepare(`SELECT telegram_id FROM users WHERE telegram_id IS NOT NULL AND is_banned = 0`).all() as any[];
+
+  // Save as global notification
+  db.prepare('INSERT INTO notifications (user_id, title, body, type) VALUES (NULL, ?, ?, ?)').run(
+    'Uswaa xabari', data.message, 'broadcast'
+  );
+
+  // Send via Telegram bot
+  let sent = 0;
+  const { bot } = await import('../services/telegramBot.js');
+  for (const u of users) {
+    try {
+      await bot.telegram.sendMessage(u.telegram_id, `📢 *Uswaa xabari*\n\n${data.message}`, { parse_mode: 'Markdown' });
+      sent++;
+    } catch { /* user blocked bot */ }
+  }
+
+  logAdminAction(req.user!.id, 'BROADCAST', undefined, `Sent to ${sent}/${users.length} users`, req.ip);
+  res.json({ success: true, message: `${sent} ta foydalanuvchiga yuborildi` });
+}));
+
+// Polls CRUD (admin)
+router.get('/polls', authenticateAdmin, asyncHandler(async (_req, res) => {
+  const polls = db.prepare('SELECT * FROM polls ORDER BY created_at DESC').all() as any[];
+  res.json({
+    success: true,
+    data: polls.map(p => ({ ...p, options: JSON.parse(p.options) })),
+  });
+}));
+
+router.post('/polls', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({
+    question: z.string().min(1),
+    options: z.array(z.string().min(1)).min(2).max(6),
+    problem_type: z.string().optional(),
+  });
+  const data = schema.parse(req.body);
+  const result = db.prepare(
+    'INSERT INTO polls (question, options, problem_type) VALUES (?, ?, ?)'
+  ).run(data.question, JSON.stringify(data.options), data.problem_type || null);
+  res.status(201).json({ success: true, data: { id: result.lastInsertRowid } });
+}));
+
+router.patch('/polls/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({ is_active: z.boolean().optional(), question: z.string().optional() });
+  const data = schema.parse(req.body);
+  if (data.is_active !== undefined) {
+    db.prepare('UPDATE polls SET is_active = ? WHERE id = ?').run(data.is_active ? 1 : 0, req.params.id);
+  }
+  if (data.question) {
+    db.prepare('UPDATE polls SET question = ? WHERE id = ?').run(data.question, req.params.id);
+  }
+  res.json({ success: true });
+}));
+
+router.delete('/polls/:id', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  db.prepare('DELETE FROM polls WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+}));
+
+// Send notification to specific user or all
+router.post('/notify', authenticateAdmin, asyncHandler(async (req: AuthRequest, res) => {
+  const schema = z.object({
+    title: z.string().min(1),
+    body: z.string().min(1),
+    userId: z.number().optional(),
+    type: z.string().default('admin'),
+  });
+  const data = schema.parse(req.body);
+  db.prepare('INSERT INTO notifications (user_id, title, body, type) VALUES (?, ?, ?, ?)').run(
+    data.userId || null, data.title, data.body, data.type
+  );
+  res.json({ success: true });
+}));
+
 export { router as adminRouter };

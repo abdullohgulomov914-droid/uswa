@@ -1,8 +1,22 @@
 import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Brain, Activity, Zap, BookOpen, ChevronDown, ChevronUp, Search, Loader2 } from "lucide-react";
-import { motion } from "motion/react";
+import { Brain, Activity, Zap, BookOpen, ChevronDown, ChevronUp, Search, Loader2, BarChart2, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { api } from "../../lib/api";
+
+interface WeeklyReport {
+  weekNumber: number;
+  streakDays: number;
+  streakChange: number;
+  longestStreak: number;
+  triggersLogged: number;
+  tacklesLogged: number;
+  relapsesThisWeek: number;
+  emergencySessions: { total: number; successful: number };
+  xpGained: number;
+  level: number;
+  problem?: string;
+}
 
 interface Article {
   id: number;
@@ -28,16 +42,20 @@ export function Science() {
   const [glossarySearch, setGlossarySearch] = useState('');
   const [activeTab, setActiveTab] = useState<'chart' | 'articles' | 'glossary'>('chart');
   const [loading, setLoading] = useState(true);
+  const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     Promise.all([
       api.request<any>('/user/me'),
       api.request<Article[]>('/science/articles'),
       api.request<GlossaryTerm[]>('/science/glossary'),
-    ]).then(([userRes, articlesRes, glossaryRes]) => {
+      api.request<any>('/notifications/weekly-report'),
+    ]).then(([userRes, articlesRes, glossaryRes, reportRes]) => {
       if (userRes.success) setStreakDays(userRes.data?.streakDays || 0);
       if (articlesRes.success && articlesRes.data) setArticles(articlesRes.data);
       if (glossaryRes.success && glossaryRes.data) setGlossary(glossaryRes.data);
+      if (reportRes.success && reportRes.data) setWeeklyReport(reportRes.data);
       setLoading(false);
     });
   }, []);
@@ -90,6 +108,86 @@ export function Science() {
                 <StatCard label="Dopamin" value={`${brainStats.dopamine}%`} color="rose" />
                 <StatCard label="Iroda" value={`${brainStats.prefrontal}%`} color="teal" />
               </div>
+
+              {/* Weekly report card */}
+              {weeklyReport && (
+                <>
+                  <motion.button
+                    onClick={() => setShowReport(true)}
+                    className="w-full bg-gradient-to-r from-indigo-900/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-4 text-left flex items-center justify-between"
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                        <BarChart2 size={18} className="text-indigo-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white">{weeklyReport.weekNumber}-haftalik hisobot</p>
+                        <p className="text-xs text-slate-400">
+                          {weeklyReport.streakChange >= 0 ? '📈' : '📉'} Zanjir: {weeklyReport.streakDays} kun · +{weeklyReport.xpGained} XP
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-400" />
+                  </motion.button>
+
+                  {/* Report modal */}
+                  <AnimatePresence>
+                    {showReport && (
+                      <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/70 z-50 flex items-end justify-center p-4"
+                        onClick={() => setShowReport(false)}
+                      >
+                        <motion.div
+                          initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+                          onClick={e => e.stopPropagation()}
+                          className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+                        >
+                          <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-white">{weeklyReport.weekNumber}-haftalik hisobot</h2>
+                            <button onClick={() => setShowReport(false)} className="text-slate-400 text-xl">✕</button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <ReportCard
+                              label="Zanjir"
+                              value={`${weeklyReport.streakDays} kun`}
+                              sub={weeklyReport.streakChange >= 0 ? `+${weeklyReport.streakChange} bu hafta` : `${weeklyReport.streakChange} bu hafta`}
+                              positive={weeklyReport.streakChange >= 0}
+                            />
+                            <ReportCard label="XP qazonildi" value={`+${weeklyReport.xpGained}`} sub={`${weeklyReport.level}-daraja`} positive />
+                            <ReportCard
+                              label="Qo'zg'atuvchilar"
+                              value={`${weeklyReport.triggersLogged} ta`}
+                              sub={`${weeklyReport.tacklesLogged} ta hal etildi`}
+                              positive={weeklyReport.tacklesLogged > 0}
+                            />
+                            <ReportCard
+                              label="Favqulodda"
+                              value={`${weeklyReport.emergencySessions.successful}/${weeklyReport.emergencySessions.total}`}
+                              sub="muvaffaqiyatli"
+                              positive={weeklyReport.emergencySessions.successful > 0}
+                            />
+                          </div>
+
+                          {weeklyReport.relapsesThisWeek > 0 && (
+                            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                              <p className="text-xs text-rose-300">Bu hafta {weeklyReport.relapsesThisWeek} ta yiqilish qayd etildi. Har bir yiqilish — yangi boshlash imkoniyati. 💪</p>
+                            </div>
+                          )}
+
+                          {weeklyReport.relapsesThisWeek === 0 && weeklyReport.streakDays > 0 && (
+                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                              <p className="text-xs text-emerald-300">🎉 Bu hafta hech qanday yiqilish yo'q! Ajoyib natija!</p>
+                            </div>
+                          )}
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
 
               <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5">
                 <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
@@ -194,6 +292,16 @@ export function Science() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function ReportCard({ label, value, sub, positive }: { label: string; value: string; sub: string; positive?: boolean }) {
+  return (
+    <div className="p-3 bg-slate-800 rounded-xl">
+      <p className="text-xs text-slate-400 mb-1">{label}</p>
+      <p className="text-lg font-bold text-white">{value}</p>
+      <p className={`text-[10px] mt-0.5 ${positive ? 'text-emerald-400' : 'text-rose-400'}`}>{sub}</p>
     </div>
   );
 }

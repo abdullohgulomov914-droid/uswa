@@ -11,6 +11,8 @@ import { adminRouter } from './routes/admin.js';
 import { telegramRouter } from './routes/telegram.js';
 import { chatRouter } from './routes/chat.js';
 import { scienceRouter } from './routes/science.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { pollsRouter } from './routes/polls.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initTelegramBot } from './services/telegramBot.js';
 import { initDatabase } from './db/index.js';
@@ -40,6 +42,8 @@ app.use('/api/telegram', telegramRouter);
 
 app.use('/api/chat', chatRouter);
 app.use('/api/science', scienceRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/polls', pollsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

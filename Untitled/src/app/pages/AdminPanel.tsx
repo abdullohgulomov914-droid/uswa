@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Users, FileText, BookOpen, BarChart2, Trash2, Plus, Edit2, Check, X, Loader2, ChevronRight, ArrowLeft } from "lucide-react";
+import { Users, FileText, BookOpen, BarChart2, Trash2, Plus, Edit2, Check, X, Loader2, ChevronRight, ArrowLeft, Send, Bell } from "lucide-react";
 import { useNavigate } from "react-router";
 import { api } from "../../lib/api";
 
-type Tab = 'stats' | 'users' | 'articles' | 'glossary';
+type Tab = 'stats' | 'users' | 'articles' | 'glossary' | 'broadcast' | 'polls';
 
 export function AdminPanel() {
   const [tab, setTab] = useState<Tab>('stats');
@@ -43,6 +43,8 @@ export function AdminPanel() {
           { id: 'users', label: 'Userlar', icon: <Users size={16} /> },
           { id: 'articles', label: 'Maqolalar', icon: <FileText size={16} /> },
           { id: 'glossary', label: "Lug'at", icon: <BookOpen size={16} /> },
+          { id: 'broadcast', label: 'Xabar', icon: <Send size={16} /> },
+          { id: 'polls', label: "So'rovnoma", icon: <BarChart2 size={16} /> },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${tab === t.id ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
@@ -56,6 +58,8 @@ export function AdminPanel() {
         {tab === 'users' && <UsersTab />}
         {tab === 'articles' && <ArticlesTab />}
         {tab === 'glossary' && <GlossaryTab />}
+        {tab === 'broadcast' && <BroadcastTab />}
+        {tab === 'polls' && <PollsAdminTab />}
       </div>
     </div>
   );
@@ -321,6 +325,166 @@ function GlossaryTab() {
             <div className="flex gap-2 shrink-0">
               <button onClick={() => edit(t)} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white"><Edit2 size={14} /></button>
               <button onClick={() => del(t.id)} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400"><Trash2 size={14} /></button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+function BroadcastTab() {
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState('');
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifBody, setNotifBody] = useState('');
+  const [notifSending, setNotifSending] = useState(false);
+
+  const broadcast = async () => {
+    if (!message.trim()) return;
+    setSending(true);
+    const res = await api.request<any>('/admin/broadcast', { method: 'POST', body: JSON.stringify({ message }) });
+    setResult(res.success ? (res.data?.message || 'Yuborildi') : 'Xatolik');
+    setMessage('');
+    setSending(false);
+  };
+
+  const sendNotif = async () => {
+    if (!notifTitle.trim() || !notifBody.trim()) return;
+    setNotifSending(true);
+    await api.request('/admin/notify', { method: 'POST', body: JSON.stringify({ title: notifTitle, body: notifBody, type: 'admin' }) });
+    setNotifTitle(''); setNotifBody('');
+    setNotifSending(false);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 mt-2">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Send size={14} className="text-blue-400" />Telegram Broadcast</h3>
+        <p className="text-xs text-slate-500">Barcha foydalanuvchilarga Telegram orqali xabar yuborish</p>
+        <textarea value={message} onChange={e => setMessage(e.target.value)}
+          placeholder="Xabar matni..."
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-blue-500 min-h-[100px] resize-none" />
+        {result && <p className="text-xs text-emerald-400">{result}</p>}
+        <button onClick={broadcast} disabled={!message.trim() || sending}
+          className="w-full py-3 bg-blue-500 disabled:bg-slate-700 text-white font-medium rounded-xl flex items-center justify-center gap-2">
+          {sending ? <Loader2 size={16} className="animate-spin" /> : <><Send size={16} />Yuborish</>}
+        </button>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Bell size={14} className="text-emerald-400" />Bildirishnoma yuborish</h3>
+        <p className="text-xs text-slate-500">Ilovadagi bildirishnomalar bo'limiga yuborish</p>
+        <Field label="Sarlavha" value={notifTitle} onChange={setNotifTitle} />
+        <div className="space-y-1">
+          <label className="text-xs text-slate-500">Matn</label>
+          <textarea value={notifBody} onChange={e => setNotifBody(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-emerald-500 min-h-[80px] resize-none" />
+        </div>
+        <button onClick={sendNotif} disabled={!notifTitle.trim() || !notifBody.trim() || notifSending}
+          className="w-full py-3 bg-emerald-500 disabled:bg-slate-700 text-white font-medium rounded-xl flex items-center justify-center gap-2">
+          {notifSending ? <Loader2 size={16} className="animate-spin" /> : <><Bell size={16} />Yuborish</>}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function PollsAdminTab() {
+  const [polls, setPolls] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [options, setOptions] = useState(['', '']);
+  const [problemType, setProblemType] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    const res = await api.request<any[]>('/admin/polls');
+    if (res.success && res.data) setPolls(res.data);
+    setLoading(false);
+  };
+
+  const save = async () => {
+    const validOptions = options.filter(o => o.trim());
+    if (!question.trim() || validOptions.length < 2) return;
+    setSaving(true);
+    await api.request('/admin/polls', { method: 'POST', body: JSON.stringify({ question, options: validOptions, problem_type: problemType || undefined }) });
+    setQuestion(''); setOptions(['', '']); setProblemType(''); setShowForm(false);
+    await load();
+    setSaving(false);
+  };
+
+  const toggle = async (id: number, isActive: boolean) => {
+    await api.request(`/admin/polls/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: !isActive }) });
+    setPolls(prev => prev.map(p => p.id === id ? { ...p, is_active: !isActive ? 1 : 0 } : p));
+  };
+
+  const del = async (id: number) => {
+    await api.request(`/admin/polls/${id}`, { method: 'DELETE' });
+    setPolls(prev => prev.filter(p => p.id !== id));
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 mt-2">
+      <button onClick={() => setShowForm(!showForm)}
+        className="w-full py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl flex items-center justify-center gap-2 text-sm font-medium">
+        <Plus size={16} />{showForm ? 'Bekor' : "Yangi so'rovnoma"}
+      </button>
+
+      {showForm && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <Field label="Savol *" value={question} onChange={setQuestion} />
+          <Field label="Muammo turi (ixtiyoriy)" value={problemType} onChange={setProblemType} placeholder="pornography, drugs, all..." />
+          <div className="space-y-2">
+            <label className="text-xs text-slate-500">Variantlar (kamida 2 ta)</label>
+            {options.map((opt, i) => (
+              <div key={i} className="flex gap-2">
+                <input value={opt} onChange={e => setOptions(prev => prev.map((o, j) => j === i ? e.target.value : o))}
+                  placeholder={`${i + 1}-variant`}
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-emerald-500" />
+                {options.length > 2 && (
+                  <button onClick={() => setOptions(prev => prev.filter((_, j) => j !== i))} className="text-slate-500 hover:text-red-400"><X size={16} /></button>
+                )}
+              </div>
+            ))}
+            {options.length < 6 && (
+              <button onClick={() => setOptions(prev => [...prev, ''])} className="text-xs text-emerald-400 flex items-center gap-1">
+                <Plus size={12} /> Variant qo'shish
+              </button>
+            )}
+          </div>
+          <button onClick={save} disabled={!question.trim() || options.filter(o => o.trim()).length < 2 || saving}
+            className="w-full py-3 bg-emerald-500 disabled:bg-slate-700 text-white font-medium rounded-xl flex items-center justify-center gap-2">
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <><Check size={16} />Saqlash</>}
+          </button>
+        </div>
+      )}
+
+      {loading ? <Spinner /> : polls.length === 0 ? (
+        <p className="text-slate-500 text-sm text-center py-6">Hali so'rovnoma yo'q</p>
+      ) : polls.map(p => (
+        <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-500'}`}>
+                  {p.is_active ? 'Faol' : 'Nofaol'}
+                </span>
+                {p.problem_type && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{p.problem_type}</span>}
+              </div>
+              <p className="text-sm text-white">{p.question}</p>
+              <p className="text-xs text-slate-500 mt-1">{Array.isArray(p.options) ? p.options.join(' · ') : ''}</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => toggle(p.id, Boolean(p.is_active))}
+                className={`text-xs px-2 py-1 rounded-lg ${p.is_active ? 'bg-slate-700 text-slate-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                {p.is_active ? 'O\'chir' : 'Yoq'}
+              </button>
+              <button onClick={() => del(p.id)} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400"><Trash2 size={14} /></button>
             </div>
           </div>
         </div>
