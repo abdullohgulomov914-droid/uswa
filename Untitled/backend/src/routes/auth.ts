@@ -44,6 +44,7 @@ router.post('/register', asyncHandler(async (req, res) => {
       id: userId,
       username: data.username,
       email: data.email,
+      isAdmin: false,
     });
     
     res.status(201).json({
@@ -97,6 +98,7 @@ router.post('/login', asyncHandler(async (req, res) => {
     id: user.id,
     username: user.username,
     email: user.email,
+    isAdmin: Boolean(user.is_admin),
   });
   
   res.json({

@@ -7,6 +7,7 @@ export interface UserPayload {
   id: number;
   username: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 export interface AuthRequest extends Request {
@@ -23,7 +24,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; username: string; email: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; username: string; email: string; isAdmin?: boolean };
     req.user = decoded;
     next();
   } catch (error) {
@@ -31,6 +32,6 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
-export function generateToken(payload: { id: number; username: string; email: string }): string {
+export function generateToken(payload: { id: number; username: string; email: string; isAdmin?: boolean }): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }

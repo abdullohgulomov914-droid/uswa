@@ -378,6 +378,7 @@ export function generateTelegramToken(telegramUser: any): string {
   return generateToken({
     id: user.id,
     username: user.telegram_username || `tg_${user.telegram_id}`,
-    email: user.email || `${user.telegram_id}@telegram.user`
+    email: user.email || `${user.telegram_id}@telegram.user`,
+    isAdmin: Boolean(user.is_admin),
   });
 }
