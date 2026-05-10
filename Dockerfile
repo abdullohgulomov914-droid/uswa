@@ -22,5 +22,5 @@ RUN npx tsc
 # Expose port
 EXPOSE 3001
 
-# Start command
-CMD ["sh", "-c", "mkdir -p /data && node dist/db/init.js && node dist/server.js"]
+# Start command - database initializes automatically on server start
+CMD ["sh", "-c", "mkdir -p /data && node dist/server.js"]

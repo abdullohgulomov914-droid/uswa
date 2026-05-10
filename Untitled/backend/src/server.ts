@@ -39,9 +39,13 @@ app.get('/api/health', (_req, res) => {
 // Error handling
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
   
-  // Initialize Telegram Bot
-  initTelegramBot();
+  // Initialize Telegram Bot (non-blocking)
+  try {
+    initTelegramBot();
+  } catch (error) {
+    console.warn('⚠️ Telegram bot init failed:', error);
+  }
 });
