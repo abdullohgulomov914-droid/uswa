@@ -1,11 +1,73 @@
+import { useEffect, useState } from 'react';
 import { motion } from "motion/react";
-import { Flame, Brain, Shield, Award, ChevronRight } from "lucide-react";
+import { Flame, Brain, Shield, Award, ChevronRight, Loader2 } from "lucide-react";
 import { Link } from "react-router";
+import { api } from '../../lib/api';
+
+interface UserStats {
+  displayName: string;
+  streakDays: number;
+  longestStreak: number;
+  xp: number;
+  level: number;
+}
 
 export function Dashboard() {
-  const userName = "Aziz";
-  const streakDays = 14;
-  const progressPercent = (streakDays / 90) * 100;
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      // Get user profile
+      const userResponse = await api.getMe();
+      if (userResponse.success && userResponse.data) {
+        const userData = userResponse.data as any;
+        setStats({
+          displayName: userData.displayName || 'Foydalanuvchi',
+          streakDays: userData.streakDays || 0,
+          longestStreak: userData.longestStreak || 0,
+          xp: userData.xp || 0,
+          level: userData.level || 1,
+        });
+      } else {
+        // Try to get from localStorage fallback
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          setStats({
+            displayName: userData.displayName || 'Foydalanuvchi',
+            streakDays: userData.streakDays || 0,
+            longestStreak: userData.longestStreak || 0,
+            xp: userData.xp || 0,
+            level: userData.level || 1,
+          });
+        }
+      }
+    } catch (err) {
+      setError('Ma\'lumotlarni yuklashda xatolik');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+      </div>
+    );
+  }
+
+  const userName = stats?.displayName || 'Foydalanuvchi';
+  const streakDays = stats?.streakDays || 0;
+  const progressPercent = Math.min((streakDays / 90) * 100, 100);
+  const level = stats?.level || 1;
 
   return (
     <div className="p-6 flex flex-col gap-8">
@@ -95,7 +157,7 @@ export function Dashboard() {
             <Award size={16} className="text-amber-400" />
             Jangchi darajasi
           </h3>
-          <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded-full font-medium">Lvl 4</span>
+          <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded-full font-medium">Lvl {level}</span>
         </div>
         <p className="text-xs text-slate-400 leading-relaxed mb-4">
           Siz hozirda "Dopamin normallashuv" bosqichidasiz. Diqqatingiz va irodangiz har kungi o'tgan kun bilan kuchayib bormoqda.
