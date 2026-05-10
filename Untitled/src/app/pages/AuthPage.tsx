@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Lock, User, Calendar, AlertTriangle, Send, ChevronRight, CheckCircle, Delete } from 'lucide-react';
+import { Shield, Lock, User, Calendar, AlertTriangle, ChevronRight, CheckCircle, Delete, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../../lib/api';
 
@@ -12,24 +12,18 @@ declare global {
         initDataUnsafe: { user?: { id: number; first_name: string; last_name?: string; username?: string; photo_url?: string } };
         ready: () => void;
         expand: () => void;
-        close: () => void;
       };
     };
   }
 }
 
-type Step = 'welcome' | 'onboarding' | 'pin-setup' | 'pin-confirm' | 'pin-login';
+type Step = 'loading' | 'onboarding' | 'pin-setup' | 'pin-confirm' | 'pin-login';
 
 function PinDots({ value }: { value: string }) {
   return (
     <div className="flex justify-center gap-4 my-6">
       {[0, 1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className={`w-4 h-4 rounded-full transition-all duration-200 ${
-            i < value.length ? 'bg-emerald-400 scale-110' : 'bg-slate-700'
-          }`}
-        />
+        <div key={i} className={`w-4 h-4 rounded-full transition-all duration-200 ${i < value.length ? 'bg-emerald-400 scale-110' : 'bg-slate-700'}`} />
       ))}
     </div>
   );
@@ -42,20 +36,12 @@ function Numpad({ onPress, onDelete }: { onPress: (n: string) => void; onDelete:
       {keys.map((k, i) => {
         if (k === '') return <div key={i} />;
         if (k === 'del') return (
-          <button
-            key={i}
-            onClick={onDelete}
-            className="h-16 flex items-center justify-center rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all"
-          >
+          <button key={i} onClick={onDelete} className="h-16 flex items-center justify-center rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all">
             <Delete className="w-5 h-5 text-slate-300" />
           </button>
         );
         return (
-          <button
-            key={i}
-            onClick={() => onPress(k)}
-            className="h-16 text-xl font-semibold text-white rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all"
-          >
+          <button key={i} onClick={() => onPress(k)} className="h-16 text-xl font-semibold text-white rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all">
             {k}
           </button>
         );
@@ -65,7 +51,7 @@ function Numpad({ onPress, onDelete }: { onPress: (n: string) => void; onDelete:
 }
 
 export function AuthPage() {
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>('loading');
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [problem, setProblem] = useState('');
@@ -78,22 +64,26 @@ export function AuthPage() {
   const { login, setPin: savePin, hasPin, verifyPin } = useAuth();
 
   useEffect(() => {
+    // Oldin kirgan user — faqat PIN ekrani
     if (hasPin()) {
       setStep('pin-login');
+      return;
     }
+
+    // Yangi user — Telegram WebApp orqali avtomatik kirish
+    autoTelegramLogin();
   }, []);
 
-  const handleTelegramLogin = async () => {
-    setIsLoading(true);
-    setError('');
+  const autoTelegramLogin = async () => {
     try {
       if (window.Telegram?.WebApp) {
         const tg = window.Telegram.WebApp;
         tg.ready();
+        tg.expand();
 
         if (!tg.initData) {
-          setError('Telegram WebApp initData topilmadi. Ilovani Telegram orqali oching.');
-          setIsLoading(false);
+          setError('Ilovani @Uswaabot orqali oching');
+          setStep('onboarding');
           return;
         }
 
@@ -101,20 +91,21 @@ export function AuthPage() {
           method: 'POST',
           body: JSON.stringify({ initData: tg.initData }),
         });
+
         if (response.success && response.data) {
           login((response.data as any).user, (response.data as any).token);
           setStep('onboarding');
         } else {
           setError((response.error?.message) || 'Telegram orqali kirishda xatolik');
+          setStep('onboarding');
         }
       } else {
-        window.open('https://t.me/Uswaabot', '_blank');
-        setError('Ilovani Telegram orqali oching: @Uswaabot');
+        setError('Ilovani @Uswaabot orqali oching');
+        setStep('onboarding');
       }
     } catch {
-      setError("Xatolik yuz berdi. Qaytadan urinib ko'ring.");
-    } finally {
-      setIsLoading(false);
+      setError("Xatolik yuz berdi");
+      setStep('onboarding');
     }
   };
 
@@ -131,8 +122,8 @@ export function AuthPage() {
     setStep('pin-setup');
   };
 
-  const handlePinConfirm = async () => {
-    if (pin !== confirmPin) {
+  const handlePinConfirm = async (confirmedPin: string) => {
+    if (pin !== confirmedPin) {
       setError("PIN kodlar mos kelmadi");
       setConfirmPin('');
       return;
@@ -141,15 +132,11 @@ export function AuthPage() {
     setError('');
     setIsLoading(true);
     try {
-      const response = await api.request('/user/profile', {
+      await api.request('/user/profile', {
         method: 'PATCH',
         body: JSON.stringify({ displayName: name, age: parseInt(age), problem }),
       });
-      if (response.success) {
-        window.location.href = '/';
-      } else {
-        setError('Profil yangilashda xatolik');
-      }
+      window.location.href = '/';
     } catch {
       setError('Xatolik yuz berdi');
     } finally {
@@ -177,51 +164,39 @@ export function AuthPage() {
 
   const renderStep = () => {
     switch (step) {
-      case 'welcome':
+      case 'loading':
         return (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
-            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-4">
+            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
               <Shield className="w-10 h-10 text-emerald-400" />
             </div>
-            <h1 className="text-3xl font-bold text-white">Identity Shift</h1>
-            <p className="text-slate-400">
-              O'zgarishga tayyormisiz? <br />
-              Sog'lom hayot sari birinchi qadam.
-            </p>
-            {error && (
-              <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm">{error}</div>
-            )}
-            <div className="space-y-3 pt-4">
-              <button
-                onClick={handleTelegramLogin}
-                disabled={isLoading}
-                className="w-full py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white font-semibold rounded-2xl transition-colors flex items-center justify-center gap-2"
-              >
-                <Send className="w-5 h-5" />
-                {isLoading ? 'Yuklanmoqda...' : 'Telegram orqali kirish'}
-              </button>
-            </div>
-            <p className="text-xs text-slate-500 pt-4">Davom etish orqali siz maxfiylik siyosatiga rozilik bildirasiz</p>
+            <h1 className="text-3xl font-bold text-white">Uswaa</h1>
+            <Loader2 className="w-6 h-6 text-emerald-400 animate-spin mx-auto" />
           </motion.div>
         );
 
       case 'onboarding':
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
+                <Shield className="w-8 h-8 text-emerald-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">Uswaa</h2>
+              <p className="text-slate-400 text-sm">Siz haqingizda bir oz ma'lumot</p>
+            </div>
+
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-amber-200 text-xs leading-relaxed">
-                  <strong className="text-amber-100">Sizning illatingiz maxfiy saqlanadi</strong> — hatto yaratuvchilar ham ko'ra olmaydi.
+                  <strong className="text-amber-100">Ma'lumotlaringiz maxfiy saqlanadi</strong> — hatto yaratuvchilar ham ko'ra olmaydi.
                 </p>
               </div>
             </div>
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Siz haqingizda</h2>
-            </div>
-            {error && (
-              <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm text-center">{error}</div>
-            )}
+
+            {error && <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm text-center">{error}</div>}
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm text-slate-400 flex items-center gap-2"><User className="w-4 h-4" />Ismingiz</label>
@@ -250,6 +225,7 @@ export function AuthPage() {
                 </select>
               </div>
             </div>
+
             <button onClick={handleOnboardingSubmit}
               className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-2xl transition-colors flex items-center justify-center gap-2">
               Davom etish <ChevronRight className="w-5 h-5" />

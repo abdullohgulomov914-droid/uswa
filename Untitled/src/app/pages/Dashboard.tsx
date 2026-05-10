@@ -80,7 +80,6 @@ export function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="mt-4"
       >
-        <p className="text-slate-400 text-sm font-medium mb-1">Identity Shift</p>
         <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
           Men {userName} - sog'lom insonman.
         </h1>
