@@ -10,20 +10,17 @@ RUN apk add --no-cache python3 make g++
 COPY Untitled/backend/package*.json ./
 COPY Untitled/backend/tsconfig.json ./
 
-# Install dependencies
+# Copy source code BEFORE npm install (so postinstall can build)
+COPY Untitled/backend/src ./src
+
+# Install dependencies (postinstall will run tsc now that src exists)
 RUN npm install
 
 # Rebuild better-sqlite3 to compile native bindings for Alpine
 RUN npm rebuild better-sqlite3 --build-from-source
 
-# Copy source code
-COPY Untitled/backend/src ./src
-
 # Create data directory (SQLite will use this)
 RUN mkdir -p /data
-
-# Build TypeScript manually
-RUN npx tsc
 
 # Expose port
 EXPOSE 3001
