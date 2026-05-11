@@ -65,13 +65,14 @@ export function AuthPage() {
 
   useEffect(() => {
     // Oldin kirgan user — faqat PIN ekrani
-    if (hasPin()) {
-      setStep('pin-login');
-      return;
-    }
-
-    // Yangi user — Telegram WebApp orqali avtomatik kirish
-    autoTelegramLogin();
+    hasPin().then(has => {
+      if (has) {
+        setStep('pin-login');
+      } else {
+        // Yangi user — Telegram WebApp orqali avtomatik kirish
+        autoTelegramLogin();
+      }
+    });
   }, []);
 
   const autoTelegramLogin = async () => {
@@ -146,7 +147,8 @@ export function AuthPage() {
   };
 
   const handlePinLogin = async (currentPin: string) => {
-    if (!verifyPin(currentPin)) {
+    const isValid = await verifyPin(currentPin);
+    if (!isValid) {
       setError("Noto'g'ri PIN kod");
       setLoginPin('');
       return;

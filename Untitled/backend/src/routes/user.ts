@@ -267,4 +267,28 @@ router.post('/auto-checkin', authenticateToken, asyncHandler(async (req: AuthReq
   }
 }));
 
+// Set PIN (backend storage)
+router.post('/set-pin', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const { pin } = z.object({ pin: z.string().length(4) }).parse(req.body);
+  // Simple hash (in production, use bcrypt)
+  const pinHash = `pin_${pin}`;
+  db.prepare('UPDATE users SET pin_hash = ? WHERE id = ?').run(pinHash, req.user!.id);
+  res.json({ success: true });
+}));
+
+// Verify PIN (backend storage)
+router.post('/verify-pin', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const { pin } = z.object({ pin: z.string().length(4) }).parse(req.body);
+  const user = db.prepare('SELECT pin_hash FROM users WHERE id = ?').get(req.user!.id) as any;
+  const pinHash = `pin_${pin}`;
+  const isValid = user?.pin_hash === pinHash;
+  res.json({ success: true, data: { isValid } });
+}));
+
+// Check if user has PIN set
+router.get('/has-pin', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+  const user = db.prepare('SELECT pin_hash FROM users WHERE id = ?').get(req.user!.id) as any;
+  res.json({ success: true, data: { hasPin: !!user?.pin_hash } });
+}));
+
 export { router as userRouter };

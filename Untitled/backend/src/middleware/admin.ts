@@ -14,12 +14,17 @@ export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction
   const stmt = db.prepare('SELECT is_admin, telegram_id FROM users WHERE id = ?');
   const user = stmt.get(req.user.id) as any;
 
-  if (!user || !user.is_admin) {
-    // Also check if telegram_id matches admin id
-    if (user?.telegram_id !== ADMIN_TELEGRAM_ID) {
-      res.status(403).json({ success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } });
-      return;
-    }
+  if (!user) {
+    res.status(403).json({ success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } });
+    return;
+  }
+
+  // Check if user has is_admin flag OR telegram_id matches admin ID
+  const isAdmin = Boolean(user.is_admin) || (ADMIN_TELEGRAM_ID && user.telegram_id === ADMIN_TELEGRAM_ID.toString());
+  
+  if (!isAdmin) {
+    res.status(403).json({ success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } });
+    return;
   }
 
   next();

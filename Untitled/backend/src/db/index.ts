@@ -38,10 +38,18 @@ export function initDatabase() {
       level INTEGER DEFAULT 1,
       is_admin INTEGER DEFAULT 0,
       is_banned INTEGER DEFAULT 0,
+      pin_hash TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Add pin_hash column if not exists (for existing databases)
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN pin_hash TEXT');
+  } catch {
+    // Column already exists
+  }
 
   // Journal entries (STAR+ triggers)
   db.exec(`

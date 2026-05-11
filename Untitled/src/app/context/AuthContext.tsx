@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { api } from '../../lib/api';
 
 interface User {
   id: number;
@@ -18,9 +19,9 @@ interface AuthContextType {
   isLoading: boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
-  verifyPin: (pin: string) => boolean;
-  setPin: (pin: string) => void;
-  hasPin: () => boolean;
+  verifyPin: (pin: string) => Promise<boolean>;
+  setPin: (pin: string) => Promise<void>;
+  hasPin: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for saved auth
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
+
     if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser));
@@ -58,15 +59,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const setPin = (pin: string) => {
-    localStorage.setItem('pin', pin);
+  const setPin = async (pin: string) => {
+    localStorage.setItem('pin', pin); // Fallback
+    try {
+      await api.request('/user/set-pin', {
+        method: 'POST',
+        body: JSON.stringify({ pin }),
+      });
+    } catch {
+      // Backend call failed, but we saved locally
+    }
   };
 
-  const hasPin = () => {
+  const hasPin = async () => {
+    // Check backend first
+    try {
+      const res = await api.request('/user/has-pin');
+      if (res.success && res.data?.hasPin) return true;
+    } catch {
+      // Backend check failed, fallback to localStorage
+    }
     return !!localStorage.getItem('pin');
   };
 
-  const verifyPin = (pin: string) => {
+  const verifyPin = async (pin: string) => {
+    // Check backend first
+    try {
+      const res = await api.request('/user/verify-pin', {
+        method: 'POST',
+        body: JSON.stringify({ pin }),
+      });
+      if (res.success && res.data?.isValid) return true;
+    } catch {
+      // Backend check failed, fallback to localStorage
+    }
     const savedPin = localStorage.getItem('pin');
     return savedPin === pin;
   };
