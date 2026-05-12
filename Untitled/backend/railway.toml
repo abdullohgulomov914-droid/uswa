@@ -1,9 +1,8 @@
 [build]
 builder = "nixpacks"
-root = "Untitled/backend"
 
 [deploy]
-startCommand = "npm run db:init && npm start"
+startCommand = "npm start"
 healthcheckPath = "/api/health"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
