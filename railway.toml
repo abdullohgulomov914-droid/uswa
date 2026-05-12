@@ -1,8 +1,7 @@
 [build]
-builder = "nixpacks"
+builder = "dockerfile"
 
 [deploy]
-startCommand = "cd Untitled/backend && npm start"
 healthcheckPath = "/api/health"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
