@@ -234,7 +234,7 @@ export function initTelegramBot() {
     const userStmt = db.prepare('SELECT COUNT(*) as count FROM users');
     const userCount = userStmt.get() as any;
 
-    const postStmt = db.prepare('SELECT COUNT(*) as count FROM community_posts WHERE created_at > datetime("now", "-24 hours")');
+    const postStmt = db.prepare('SELECT COUNT(*) as count FROM community_posts WHERE created_at > datetime(\'now\', \'-24 hours\')');
     const postsToday = postStmt.get() as any;
 
     const message = 
