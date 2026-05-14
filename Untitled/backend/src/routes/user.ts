@@ -20,7 +20,8 @@ router.post('/auto-checkin', authenticateToken, asyncHandler(async (req: AuthReq
   `).get(req.user!.id, today);
   
   if (existingCheckin) {
-    return res.json({ success: false, error: { message: 'Already checked in today', code: 'ALREADY_CHECKED_IN' } });
+    res.json({ success: false, error: { message: 'Already checked in today', code: 'ALREADY_CHECKED_IN' } });
+    return;
   }
   
   // Get user data
